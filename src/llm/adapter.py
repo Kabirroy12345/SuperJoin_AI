@@ -17,14 +17,7 @@ class LLMAdapter:
         self.api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
         if self.api_key:
             self.provider = "gemini"
-            try:
-                import google.generativeai as genai
-                genai.configure(api_key=self.api_key)
-                self.model = genai.GenerativeModel('gemini-2.0-flash')
-                logger.info("Initialized Gemini LLM adapter (gemini-2.0-flash).")
-            except Exception as e:
-                logger.warning(f"Failed to initialize Gemini client: {e}. Falling back to offline mode.")
-                self.provider = "offline"
+            logger.info("Initialized Gemini LLM REST adapter (gemini-3.1-flash-lite).")
         else:
             self.api_key = os.getenv("OPENAI_API_KEY")
             if self.api_key:
@@ -213,26 +206,31 @@ class LLMAdapter:
                     matched = True
                     break
 
-            if not matched and any(kw in line.lower() for kw in ["total", "growth", "reported", "director", "office", "crore", "percent", "million"]):
-                caps = re.findall(r'\b[A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*)*\b', line)
-                stop_caps = {'The', 'This', 'These', 'Total', 'In', 'Our', 'We', 'A', 'An', 'As', 'For', 'On', 'At', 'By', 'It', 'Its', 'Table', 'Figure', 'Section', 'Page'}
-                detected_entities = [c.strip() for c in caps if c not in stop_caps and len(c) > 2]
-                fallback_subject = detected_entities[0] if detected_entities else "Reporting Entity"
+            # Disallow loose table row dumps and boilerplate
+            is_table_dump = bool(re.search(r'^\s*total\s+[\d\s.%]+$', line, re.IGNORECASE))
+            is_boilerplate = any(b in line.lower() for b in ["the companies act", "rules framed thereunder", "secretarial audit"])
+            if not matched and not is_table_dump and not is_boilerplate and any(kw in line.lower() for kw in ["reported", "revenue", "profit", "ebitda", "crore", "million", "billion"]):
+                # Require genuine alphabetic length and a valid metric mention
+                if len(re.findall(r'[a-zA-Z]{3,}', line)) >= 4 and len(line) >= 30:
+                    caps = re.findall(r'\b[A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*)*\b', line)
+                    stop_caps = {'The', 'This', 'These', 'Total', 'In', 'Our', 'We', 'A', 'An', 'As', 'For', 'On', 'At', 'By', 'It', 'Its', 'Table', 'Figure', 'Section', 'Page'}
+                    detected_entities = [c.strip() for c in caps if c not in stop_caps and len(c) > 2]
+                    fallback_subject = detected_entities[0] if detected_entities else "Reporting Entity"
 
-                facts.append({
-                    "claim": line.strip(),
-                    "subject": fallback_subject,
-                    "predicate": "reported metric or disclosure",
-                    "object_value": line[:80].strip(),
-                    "entities": detected_entities if detected_entities else [fallback_subject],
-                    "entity_types": ["Organization"],
-                    "attributes": {"period": period or "unspecified"},
-                    "category": "operational",
-                    "confidence": 0.75,
-                    "source_quote": line.strip()
-                })
+                    facts.append({
+                        "claim": line.strip(),
+                        "subject": fallback_subject,
+                        "predicate": "disclosed metric",
+                        "object_value": line[:80].strip(),
+                        "entities": detected_entities if detected_entities else [fallback_subject],
+                        "entity_types": ["Organization"],
+                        "attributes": {"period": period or "unspecified"},
+                        "category": "operational",
+                        "confidence": 0.80,
+                        "source_quote": line.strip()
+                    })
 
-            if len(facts) >= 12:
+            if len(facts) >= 10:
                 break
 
         return facts

@@ -14,85 +14,89 @@ class FactReconciler:
     def __init__(self, llm_adapter: LLMAdapter):
         self.llm = llm_adapter
 
-    def reconcile(self, candidates: List[Tuple[Fact, Fact, float]]) -> List[FactRelationship]:
-        """Evaluates candidate pairs and creates relationships.
+    def reconcile(self, candidates: List[Tuple[Fact, Fact, float]], batch_size: int = 4) -> List[FactRelationship]:
+        """Evaluates candidate pairs using batched LLM classification.
         
         Args:
             candidates: List of tuples containing two Fact instances and their similarity score.
+            batch_size: Number of pairs to evaluate per LLM prompt (default 4).
             
         Returns:
             A list of valid FactRelationships (filtering out UNRELATED pairs).
         """
         relationships = []
-        
-        for fact_a, fact_b, sim in candidates:
-            prompt = self._build_prompt(fact_a, fact_b)
-            
+        if not candidates:
+            return relationships
+
+        for i in range(0, len(candidates), batch_size):
+            batch = candidates[i:i + batch_size]
+            pair_map = {f"p-{idx}": (fa, fb, sim) for idx, (fa, fb, sim) in enumerate(batch)}
+
+            prompt_lines = [
+                "You are an expert financial and corporate data auditor.",
+                "Determine the relationship between pairs of extracted facts across different filings.\n",
+                "CLASSIFICATION CATEGORIES:",
+                "1. CORROBORATION: Both documents confirm the exact same metric, event, or claim across filings.",
+                "2. CONTRADICTION: Both documents present mutually exclusive or conflicting metrics/claims without reconciliation.",
+                "3. CONTEXTUAL_RECONCILIATION: Discrepancies are reconciled by differing time periods (e.g. 2021 vs 2024), definitions, or reporting scopes.",
+                "4. UNRELATED: Discuss different metrics, topics, or entities.\n"
+            ]
+
+            for pid, (fa, fb, sim) in pair_map.items():
+                prompt_lines.append(f"--- PAIR ID: {pid} ---")
+                prompt_lines.append(f"Fact A [{fa.doc_filename}, Page {fa.page_number}]:")
+                prompt_lines.append(f"  Claim: {fa.claim}")
+                prompt_lines.append(f"  Source Quote: \"{fa.source_quote[:160]}\"")
+                prompt_lines.append(f"Fact B [{fb.doc_filename}, Page {fb.page_number}]:")
+                prompt_lines.append(f"  Claim: {fb.claim}")
+                prompt_lines.append(f"  Source Quote: \"{fb.source_quote[:160]}\"\n")
+
+            prompt_lines.append(
+                "Respond with a JSON array where each object has:\n"
+                "- \"pair_id\": (e.g. \"p-0\")\n"
+                "- \"relationship_type\": (\"CORROBORATION\", \"CONTRADICTION\", \"CONTEXTUAL_RECONCILIATION\", or \"UNRELATED\")\n"
+                "- \"explanation\": (2-3 clear sentences citing specific values, dates, or context from both sources)\n"
+                "- \"confidence\": (Float between 0.0 and 1.0)\n\n"
+                "Output ONLY a valid JSON array and no other text."
+            )
+            prompt = "\n".join(prompt_lines)
+
             try:
-                # Request JSON format from the LLM Adapter
-                response_text = self.llm.call(prompt)
-                
-                # Basic cleanup in case LLM adapter doesn't strip markdown code blocks
-                response_text = response_text.strip()
-                if response_text.startswith("```json"):
-                    response_text = response_text[7:-3].strip()
-                elif response_text.startswith("```"):
-                    response_text = response_text[3:-3].strip()
-                    
-                result = json.loads(response_text)
-                
-                rel_type_str = result.get("relationship_type", "").upper()
-                
-                # Filter out UNRELATED pairs (don't store them)
-                if rel_type_str == "UNRELATED":
+                results = self.llm.call_json(prompt)
+                if not isinstance(results, list):
                     continue
-                    
-                try:
-                    rel_type = RelationshipType(rel_type_str.lower())
-                except ValueError:
-                    logger.warning(f"Invalid relationship type returned by LLM: {rel_type_str}")
-                    continue
-                    
-                explanation = result.get("explanation", "")
-                confidence = float(result.get("confidence", 0.0))
-                
-                rel = FactRelationship(
-                    id=str(uuid.uuid4()),
-                    fact_a_id=str(fact_a.id),
-                    fact_b_id=str(fact_b.id),
-                    relationship_type=rel_type,
-                    explanation=explanation,
-                    confidence=confidence
-                )
-                relationships.append(rel)
-                
+
+                for res in results:
+                    pid = res.get("pair_id")
+                    if pid not in pair_map:
+                        continue
+
+                    fa, fb, sim = pair_map[pid]
+                    rel_type_str = res.get("relationship_type", "").upper().strip()
+
+                    if rel_type_str == "UNRELATED":
+                        continue
+
+                    try:
+                        rel_type = RelationshipType(rel_type_str.lower())
+                    except ValueError:
+                        continue
+
+                    explanation = res.get("explanation", "").strip()
+                    confidence = float(res.get("confidence", 0.85))
+
+                    rel = FactRelationship(
+                        id=str(uuid.uuid4()),
+                        fact_a_id=str(fa.id),
+                        fact_b_id=str(fb.id),
+                        relationship_type=rel_type,
+                        explanation=explanation,
+                        confidence=confidence
+                    )
+                    relationships.append(rel)
+
             except Exception as e:
-                logger.error(f"Error reconciling facts {fact_a.id} and {fact_b.id}: {e}")
-                
+                logger.error(f"Batch reconciliation error for batch starting at {i}: {e}")
+                continue
+
         return relationships
-
-    def _build_prompt(self, fact_a: Fact, fact_b: Fact) -> str:
-        """Builds a domain-agnostic prompt to evaluate the relationship between two facts."""
-        return f"""You are an expert data analyst. Your task is to determine the relationship between two extracted facts from different documents.
-
-Fact A:
-- Document: {fact_a.doc_filename} (Page {fact_a.page_number})
-- Claim: {fact_a.claim}
-- Source Quote: "{fact_a.source_quote}"
-
-Fact B:
-- Document: {fact_b.doc_filename} (Page {fact_b.page_number})
-- Claim: {fact_b.claim}
-- Source Quote: "{fact_b.source_quote}"
-
-Classify the relationship between Fact A and Fact B into exactly one of these categories:
-1. CORROBORATION: They support or confirm each other.
-2. CONTRADICTION: They conflict or present mutually exclusive information.
-3. CONTEXTUAL_RECONCILIATION: They appear to conflict or be different, but can be reconciled (e.g., different dates, different reporting metrics, different scopes).
-4. UNRELATED: They are completely unrelated or describing different entities/topics.
-
-Respond with a JSON object containing:
-- "relationship_type": (One of: "CORROBORATION", "CONTRADICTION", "CONTEXTUAL_RECONCILIATION", "UNRELATED")
-- "explanation": (A 2-3 sentence explanation citing specific values, dates, or context from both sources)
-- "confidence": (A float between 0.0 and 1.0 indicating your confidence)
-"""

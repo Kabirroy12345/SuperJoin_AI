@@ -8,8 +8,11 @@ class FactPairer:
     """Finds candidate pairs of facts for reconciliation across documents."""
     
     def __init__(self):
-        # Common suffixes and honorifics to strip
-        self.stop_words = {'mr', 'mrs', 'ms', 'dr', 'ltd', 'limited', 'inc', 'corp', 'corporation', 'llc', 'and', 'the', 'of'}
+        # Common suffixes, honorifics, and generic corporate terms to strip
+        self.stop_words = {
+            'mr', 'mrs', 'ms', 'dr', 'ltd', 'limited', 'inc', 'corp', 'corporation',
+            'llc', 'and', 'the', 'of', 'company', 'group', 'report', 'delhivery', 'india'
+        }
 
     def _normalize_entity(self, entity: str) -> str:
         """Lowercase and strip honorifics/suffixes from entity."""
@@ -28,6 +31,9 @@ class FactPairer:
         norm_a.discard("")
         norm_b.discard("")
         
+        if not norm_a or not norm_b:
+            return False
+
         # 1. Fast O(1) exact set intersection
         if norm_a & norm_b:
             return True
@@ -49,8 +55,6 @@ class FactPairer:
             
         a = np.array(vec_a, dtype=np.float32)
         b = np.array(vec_b, dtype=np.float32)
-        
-        # Vectors from FactEmbedder are L2-normalized, so dot product = cosine similarity
         dot = float(np.dot(a, b))
         return max(-1.0, min(1.0, dot))
 
@@ -58,16 +62,18 @@ class FactPairer:
         self, 
         new_facts: List[Fact], 
         existing_facts: List[Fact], 
-        min_cosine: float = 0.65, 
-        top_k: int = 10
+        min_cosine: float = 0.72, 
+        top_k: int = 2,
+        max_total: int = 35
     ) -> List[Tuple[Fact, Fact, float]]:
         """Finds candidate pairs of facts for reconciliation.
         
         Args:
             new_facts: Facts to match against existing ones.
             existing_facts: The existing knowledge base of facts.
-            min_cosine: Minimum cosine similarity threshold for entity-matched facts.
-            top_k: Maximum number of candidate matches to keep per new fact.
+            min_cosine: Minimum cosine similarity threshold for matched facts.
+            top_k: Maximum candidate matches to keep per new fact.
+            max_total: Overall cap for top candidate pairs across the document.
             
         Returns:
             A list of tuples containing (Fact A, Fact B, cosine_similarity).
@@ -100,11 +106,11 @@ class FactPairer:
                     
                 sim = float(sim_matrix[i, j])
                 
-                # Rule 1 & 2: Entity overlap AND sim >= min_cosine
+                # Rule 1: Entity overlap AND sim >= min_cosine
                 has_overlap = self._entities_overlap(nf.entities, ef.entities)
                 if has_overlap:
                     nf_candidates.append((ef, sim))
-                elif sim >= 0.85: # Rule 3: High similarity fallback
+                elif sim >= 0.82: # Rule 2: High semantic similarity fallback
                     nf_candidates.append((ef, sim))
                     
             nf_candidates.sort(key=lambda x: x[1], reverse=True)
@@ -113,4 +119,6 @@ class FactPairer:
                 if pair_key not in candidates:
                     candidates[pair_key] = (nf, ef, sim)
                     
-        return list(candidates.values())
+        # Sort all discovered candidate pairs by similarity and return top max_total
+        sorted_pairs = sorted(candidates.values(), key=lambda x: x[2], reverse=True)
+        return sorted_pairs[:max_total]
