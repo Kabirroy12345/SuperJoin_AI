@@ -37,13 +37,13 @@ class FactExtractor:
             "- confidence: Float between 0.0 and 1.0.\n"
             "- source_quote: Verbatim exact snippet from the text supporting the claim.\n\n"
             "Examples:\n"
-            "Text: 'Delhivery reported revenue from operations of ₹8,142 crore in FY24.'\n"
-            "Output: [{\"claim\": \"Delhivery reported revenue from operations of ₹8,142 crore in FY24.\", "
-            "\"subject\": \"Delhivery\", \"predicate\": \"reported revenue from operations\", \"object_value\": \"₹8,142 crore\", "
-            "\"entities\": [\"Delhivery\"], \"entity_types\": [\"Organization\"], "
-            "\"attributes\": {\"period\": \"FY24\", \"value\": 8142, \"unit\": \"₹ crore\"}, "
+            "Text: 'Acme Logistics reported revenue from operations of $8,142 million in FY24.'\n"
+            "Output: [{\"claim\": \"Acme Logistics reported revenue from operations of $8,142 million in FY24.\", "
+            "\"subject\": \"Acme Logistics\", \"predicate\": \"reported revenue from operations\", \"object_value\": \"$8,142 million\", "
+            "\"entities\": [\"Acme Logistics\"], \"entity_types\": [\"Organization\"], "
+            "\"attributes\": {\"period\": \"FY24\", \"value\": 8142, \"unit\": \"$ million\"}, "
             "\"category\": \"financial\", \"confidence\": 0.98, "
-            "\"source_quote\": \"Delhivery reported revenue from operations of ₹8,142 crore in FY24.\"}]\n\n"
+            "\"source_quote\": \"Acme Logistics reported revenue from operations of $8,142 million in FY24.\"}]\n\n"
             "Ensure output is ONLY a valid JSON array and contains no commentary."
         )
 
@@ -132,7 +132,24 @@ class FactExtractor:
                     try:
                         c_id = item.get("chunk_id")
                         ref_chunk = chunk_map.get(c_id, batch[0])
-                        page_num = int(item.get("page_number", ref_chunk.page_number))
+
+                        # Robust page number extraction
+                        raw_page = item.get("page_number")
+                        if raw_page is not None:
+                            page_match = re.search(r'\d+', str(raw_page))
+                            page_num = int(page_match.group(0)) if page_match else ref_chunk.page_number
+                        else:
+                            page_num = ref_chunk.page_number
+
+                        # Robust confidence parsing
+                        raw_conf = item.get("confidence", 0.90)
+                        try:
+                            if isinstance(raw_conf, str) and "%" in raw_conf:
+                                confidence = float(raw_conf.replace("%", "").strip()) / 100.0
+                            else:
+                                confidence = float(raw_conf)
+                        except (ValueError, TypeError):
+                            confidence = 0.90
 
                         fact_id = str(uuid.uuid4())
                         fact = Fact(
@@ -145,7 +162,7 @@ class FactExtractor:
                             entity_types=item.get("entity_types", []),
                             attributes=item.get("attributes", {}),
                             category=item.get("category", "operational"),
-                            confidence=float(item.get("confidence", 0.90)),
+                            confidence=confidence,
                             source_quote=item.get("source_quote", "").strip(),
                             doc_id=ref_chunk.doc_id,
                             doc_filename=ref_chunk.doc_filename,

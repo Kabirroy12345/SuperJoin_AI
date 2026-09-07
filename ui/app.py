@@ -20,6 +20,14 @@ def fetch_data(endpoint: str) -> Any:
     except requests.exceptions.RequestException as e:
         return None
 
+def _safe_float(val: Any, default: float = 0.0) -> float:
+    try:
+        if val is None:
+            return default
+        return float(val)
+    except (ValueError, TypeError):
+        return default
+
 # Sidebar Navigation
 page = st.sidebar.radio(
     "Navigation",
@@ -136,7 +144,7 @@ elif page == "🔍 Facts Explorer":
 
                     with col_b:
                         st.markdown("#### Extraction Confidence")
-                        conf = float(fact.get("confidence", fact.get("confidence_score", 0.0)))
+                        conf = _safe_float(fact.get("confidence") or fact.get("confidence_score"), 0.85)
                         st.progress(min(max(conf, 0.0), 1.0))
                         st.write(f"Score: **{conf:.2f}** ({conf * 100:.1f}%)")
 
@@ -180,7 +188,7 @@ elif page == "🔗 Relationships":
                 fact_b = rel.get("fact_b")
 
                 rtype = rel.get("relationship_type", "unknown").lower()
-                conf = float(rel.get("confidence", rel.get("confidence_score", 0.0)))
+                conf = _safe_float(rel.get("confidence") or rel.get("confidence_score"), 0.85)
 
                 if "corroboration" in rtype:
                     st.success(f"✅ **CORROBORATION** (Confidence: {conf:.2f})")

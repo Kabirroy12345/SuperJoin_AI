@@ -11,7 +11,7 @@ class FactPairer:
         # Common suffixes, honorifics, and generic corporate terms to strip
         self.stop_words = {
             'mr', 'mrs', 'ms', 'dr', 'ltd', 'limited', 'inc', 'corp', 'corporation',
-            'llc', 'and', 'the', 'of', 'company', 'group', 'report', 'delhivery', 'india'
+            'llc', 'plc', 'co', 'and', 'the', 'of', 'company', 'group', 'report'
         }
 
     def _normalize_entity(self, entity: str) -> str:
@@ -80,10 +80,16 @@ class FactPairer:
         """
         candidates: dict[tuple[str, str], tuple[Fact, Fact, float]] = {}
         
-        valid_new = [f for f in new_facts if f.embedding is not None]
-        valid_existing = [f for f in existing_facts if f.embedding is not None]
+        valid_new = [f for f in new_facts if f.embedding is not None and len(f.embedding) > 0]
+        valid_existing = [f for f in existing_facts if f.embedding is not None and len(f.embedding) > 0]
         
         if not valid_new or not valid_existing:
+            return []
+
+        # Ensure embedding dimensions align
+        dim_new = len(valid_new[0].embedding)
+        valid_existing = [f for f in valid_existing if len(f.embedding) == dim_new]
+        if not valid_existing:
             return []
 
         # Vectorized batch cosine similarity

@@ -72,18 +72,29 @@ class FactReconciler:
                         continue
 
                     fa, fb, sim = pair_map[pid]
-                    rel_type_str = res.get("relationship_type", "").upper().strip()
+                    rel_type_str = res.get("relationship_type", "").lower().strip()
+                    norm_type = rel_type_str.replace(" ", "_").replace("-", "_")
 
-                    if rel_type_str == "UNRELATED":
+                    if "unrelated" in norm_type:
                         continue
-
-                    try:
-                        rel_type = RelationshipType(rel_type_str.lower())
-                    except ValueError:
-                        continue
+                    elif "corroborat" in norm_type:
+                        rel_type = RelationshipType.CORROBORATION
+                    elif "contradict" in norm_type:
+                        rel_type = RelationshipType.CONTRADICTION
+                    elif "reconcil" in norm_type or "context" in norm_type:
+                        rel_type = RelationshipType.CONTEXTUAL_RECONCILIATION
+                    else:
+                        try:
+                            rel_type = RelationshipType(norm_type)
+                        except ValueError:
+                            continue
 
                     explanation = res.get("explanation", "").strip()
-                    confidence = float(res.get("confidence", 0.85))
+                    raw_conf = res.get("confidence", 0.85)
+                    try:
+                        confidence = float(raw_conf)
+                    except (ValueError, TypeError):
+                        confidence = 0.85
 
                     rel = FactRelationship(
                         id=str(uuid.uuid4()),

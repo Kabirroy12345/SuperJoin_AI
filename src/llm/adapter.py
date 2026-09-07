@@ -298,13 +298,37 @@ class LLMAdapter:
         response_text = self.call(prompt, system_prompt, temperature)
         
         text = response_text.strip()
-        if text.startswith("```"):
-            lines = text.split("\n")
-            if len(lines) >= 2:
-                text = "\n".join(lines[1:-1])
-        
+
+        # 1. Try extracting code block content
+        code_block = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', text)
+        if code_block:
+            clean_candidate = code_block.group(1).strip()
+            try:
+                return json.loads(clean_candidate)
+            except json.JSONDecodeError:
+                pass
+
+        # 2. Try direct parsing
         try:
             return json.loads(text)
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON response: {e}. Raw response: {response_text}")
-            raise RuntimeError(f"JSON parsing failed: {e}")
+        except json.JSONDecodeError:
+            pass
+
+        # 3. Try finding outermost JSON array or object
+        first_bracket = min([pos for pos in [text.find('['), text.find('{')] if pos != -1], default=-1)
+        last_bracket = max(text.rfind(']'), text.rfind('}'))
+
+        if first_bracket != -1 and last_bracket != -1 and last_bracket > first_bracket:
+            substring = text[first_bracket:last_bracket + 1].strip()
+            try:
+                return json.loads(substring)
+            except json.JSONDecodeError:
+                # Remove trailing commas before closing braces/brackets
+                cleaned = re.sub(r',\s*([\]}])', r'\1', substring)
+                try:
+                    return json.loads(cleaned)
+                except json.JSONDecodeError:
+                    pass
+
+        logger.error(f"Failed to parse JSON response. Raw response: {response_text}")
+        raise RuntimeError("JSON parsing failed: LLM output could not be parsed as JSON.")

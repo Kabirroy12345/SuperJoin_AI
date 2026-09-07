@@ -73,8 +73,9 @@ async def upload_documents(
             })
             continue
 
+        safe_name = os.path.basename(upload.filename)
         temp_dir = tempfile.mkdtemp()
-        temp_path = os.path.join(temp_dir, upload.filename)
+        temp_path = os.path.join(temp_dir, safe_name)
         try:
             with open(temp_path, "wb") as buffer:
                 shutil.copyfileobj(upload.file, buffer)
@@ -82,7 +83,7 @@ async def upload_documents(
             # Ingest document incrementally
             ingest_result = pipeline.ingest_document(temp_path)
             results.append({
-                "filename": upload.filename,
+                "filename": safe_name,
                 "status": "success",
                 "result": ingest_result
             })

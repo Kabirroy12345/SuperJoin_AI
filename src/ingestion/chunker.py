@@ -67,11 +67,12 @@ class Chunker:
                 
                 # Split large paragraph by arbitrary chunks with overlap
                 start = 0
+                step = max(1, self.target_chars - self.overlap_chars)
                 while start < len(para):
                     end = min(start + self.target_chars, len(para))
                     segment = para[start:end]
                     new_chunks.append(self._create_new_chunk(chunk, segment))
-                    start += (self.target_chars - self.overlap_chars)
+                    start += step
                     
             elif len(current_text) + len(para) + 2 <= self.target_chars:
                 if current_text:
