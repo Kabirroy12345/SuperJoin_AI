@@ -62,12 +62,45 @@ class LLMAdapter:
         raise RuntimeError("LLM API call failed completely.")
 
     def _call_gemini(self, prompt: str, system_prompt: str, temperature: float) -> str:
-        """Internal method to call Gemini."""
+        """Internal method to call Gemini via REST API with multi-model fallback."""
+        model_name = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
-        import google.generativeai as genai
-        config = genai.types.GenerationConfig(temperature=temperature)
-        response = self.model.generate_content(full_prompt, generation_config=config)
-        return response.text
+
+        import urllib.request
+        import json
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.api_key}"
+        payload = {
+            "contents": [{"parts": [{"text": full_prompt}]}],
+            "generationConfig": {"temperature": temperature}
+        }
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+                candidates = result.get("candidates", [])
+                if candidates and "content" in candidates[0]:
+                    parts = candidates[0]["content"].get("parts", [])
+                    if parts and "text" in parts[0]:
+                        return parts[0]["text"]
+        except Exception as e:
+            logger.warning(f"Primary Gemini call ({model_name}) failed: {e}. Trying fallback...")
+
+        # Fast fallback models
+        for fb in ["gemini-3.1-flash-lite", "gemini-flash-latest", "gemini-3.6-flash"]:
+            if fb == model_name:
+                continue
+            url_fb = f"https://generativelanguage.googleapis.com/v1beta/models/{fb}:generateContent?key={self.api_key}"
+            req_fb = urllib.request.Request(url_fb, data=data, headers={"Content-Type": "application/json"})
+            try:
+                with urllib.request.urlopen(req_fb, timeout=30) as resp:
+                    result = json.loads(resp.read().decode("utf-8"))
+                    return result["candidates"][0]["content"]["parts"][0]["text"]
+            except Exception:
+                continue
+
+        return self._call_offline(prompt, system_prompt)
 
     def _call_openai(self, prompt: str, system_prompt: str, temperature: float) -> str:
         """Internal method to call OpenAI."""
