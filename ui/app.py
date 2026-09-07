@@ -1,0 +1,296 @@
+import streamlit as st
+import requests
+import pandas as pd
+from typing import List, Dict, Any
+import json
+
+API_BASE_URL = "http://localhost:8000/api"
+
+st.set_page_config(page_title="Fact Knowledge Layer", page_icon="🔍", layout="wide")
+
+st.title("🔍 Fact Knowledge Layer")
+st.markdown("Automated Fact Extraction, Evidence Grounding, and Cross-Document Reconciliation")
+
+@st.cache_data(ttl=15)
+def fetch_data(endpoint: str) -> Any:
+    try:
+        response = requests.get(f"{API_BASE_URL}{endpoint}", timeout=20)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        return None
+
+# Sidebar Navigation
+page = st.sidebar.radio(
+    "Navigation",
+    ["📤 Upload Documents", "📄 Documents", "🔍 Facts Explorer", "🔗 Relationships", "✅ Four Required Cases", "📊 Export & Stats"]
+)
+
+if page == "📤 Upload Documents":
+    st.header("Upload Documents")
+    st.markdown("Upload PDF documents to parse, extract facts, ground evidence, and incrementally reconcile against existing knowledge.")
+
+    uploaded_files = st.file_uploader("Choose PDF files", type=["pdf"], accept_multiple_files=True)
+
+    if uploaded_files:
+        if st.button("Process Documents", type="primary"):
+            for file in uploaded_files:
+                st.subheader(f"Processing: {file.name}")
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+
+                status_text.text("Uploading and running extraction pipeline...")
+                progress_bar.progress(25)
+                try:
+                    files = {"file": (file.name, file.getvalue(), "application/pdf")}
+                    response = requests.post(f"{API_BASE_URL}/upload", files=files, timeout=600)
+
+                    if response.status_code == 200:
+                        result = response.json()
+                        progress_bar.progress(100)
+                        status_text.text("Processing complete!")
+                        st.success(f"Successfully processed {file.name}")
+                        with st.expander("Pipeline Output Details"):
+                            st.json(result)
+                    else:
+                        st.error(f"Failed to process {file.name}: {response.text}")
+                except requests.exceptions.RequestException as e:
+                    st.error(f"Connection error while uploading {file.name}: {e}")
+
+                st.divider()
+
+elif page == "📄 Documents":
+    st.header("Ingested Documents")
+
+    docs = fetch_data("/documents")
+    if docs is not None:
+        if docs:
+            df = pd.DataFrame(docs)
+            st.dataframe(df, use_container_width=True)
+            st.metric("Total Ingested Documents", len(docs))
+        else:
+            st.info("No documents uploaded yet. Go to 'Upload Documents' tab to get started.")
+    else:
+        st.warning("Could not reach backend API at http://localhost:8000. Is the API server running?")
+
+elif page == "🔍 Facts Explorer":
+    st.header("Extracted Facts Explorer")
+    st.markdown("Browse and search extracted atomic facts, their source evidence, and contextual attributes.")
+
+    facts = fetch_data("/facts")
+    docs = fetch_data("/documents")
+
+    if facts is not None and docs is not None:
+        if not facts:
+            st.info("No facts extracted yet.")
+        else:
+            doc_map = {d["id"]: d["filename"] for d in docs}
+            doc_options = ["All Documents"] + list(doc_map.values())
+
+            col1, col2 = st.columns(2)
+            with col1:
+                selected_doc = st.selectbox("Filter by Document", doc_options)
+            with col2:
+                search_query = st.text_input("Search Claims / Subjects / Keywords")
+
+            filtered_facts = facts
+            if selected_doc != "All Documents":
+                doc_id_to_filter = next((k for k, v in doc_map.items() if v == selected_doc), None)
+                filtered_facts = [f for f in filtered_facts if f.get("doc_id") == doc_id_to_filter]
+
+            if search_query:
+                q = search_query.lower()
+                filtered_facts = [
+                    f for f in filtered_facts
+                    if q in f.get("claim", "").lower()
+                    or q in f.get("subject", "").lower()
+                    or q in f.get("object_value", "").lower()
+                    or any(q in e.lower() for e in f.get("entities", []))
+                ]
+
+            st.write(f"Showing **{len(filtered_facts)}** facts")
+
+            for fact in filtered_facts:
+                claim_text = fact.get("claim", "No claim")
+                with st.expander(f"**{claim_text}**"):
+                    st.markdown(f"**Subject**: `{fact.get('subject')}` | **Predicate**: `{fact.get('predicate')}` | **Object/State**: `{fact.get('object_value')}`")
+
+                    st.markdown("#### 📄 Grounded Source Evidence")
+                    doc_name = fact.get("doc_filename") or doc_map.get(fact.get("doc_id"), "Unknown Document")
+                    page_num = fact.get("page_number", "N/A")
+                    st.caption(f"Source: **{doc_name}** — Page {page_num}")
+                    quote = fact.get("source_quote", "")
+                    if quote:
+                        st.info(f"\"{quote}\"")
+
+                    col_a, col_b = st.columns(2)
+                    with col_a:
+                        st.markdown("#### Entities & Category")
+                        st.write(f"**Category**: `{fact.get('category', 'general')}`")
+                        entities = fact.get("entities", [])
+                        entity_types = fact.get("entity_types", [])
+                        if entities:
+                            st.write("**Entities**:")
+                            tags = [f"`{e}` ({t})" if i < len(entity_types) and (t := entity_types[i]) else f"`{e}`" for i, e in enumerate(entities)]
+                            st.markdown(" ".join(tags))
+
+                    with col_b:
+                        st.markdown("#### Extraction Confidence")
+                        conf = float(fact.get("confidence", fact.get("confidence_score", 0.0)))
+                        st.progress(min(max(conf, 0.0), 1.0))
+                        st.write(f"Score: **{conf:.2f}** ({conf * 100:.1f}%)")
+
+                    attrs = fact.get("attributes", {})
+                    if attrs and isinstance(attrs, dict) and len(attrs) > 0:
+                        st.markdown("#### Structured Attributes (Evolving Schema)")
+                        attr_df = pd.DataFrame([{"Attribute": k, "Value": str(v)} for k, v in attrs.items()])
+                        st.table(attr_df)
+    else:
+        st.warning("Backend API not reachable at http://localhost:8000. Start the server using: `python run.py --serve`")
+
+elif page == "🔗 Relationships":
+    st.header("Cross-Document Fact Relationships")
+    st.markdown("Reconciliations discovered across different documents, classified by semantic comparison and contextual analysis.")
+
+    relationships = fetch_data("/relationships")
+    docs = fetch_data("/documents")
+
+    if relationships is not None:
+        if not relationships:
+            st.info("No cross-document relationships discovered yet. Ensure at least two documents have been ingested.")
+        else:
+            rel_type = st.radio(
+                "Filter by Relationship Type",
+                ["All", "Corroboration", "Contradiction", "Contextual Reconciliation"],
+                horizontal=True
+            )
+
+            filtered_rels = relationships
+            if rel_type != "All":
+                norm_type = rel_type.lower().replace(" ", "_")
+                filtered_rels = [
+                    r for r in filtered_rels
+                    if r.get("relationship_type", "").lower() == norm_type or r.get("relationship_type", "").lower() == rel_type.lower()
+                ]
+
+            st.write(f"Showing **{len(filtered_rels)}** relationships")
+
+            for rel in filtered_rels:
+                fact_a = rel.get("fact_a")
+                fact_b = rel.get("fact_b")
+
+                rtype = rel.get("relationship_type", "unknown").lower()
+                conf = float(rel.get("confidence", rel.get("confidence_score", 0.0)))
+
+                if "corroboration" in rtype:
+                    st.success(f"✅ **CORROBORATION** (Confidence: {conf:.2f})")
+                elif "contradiction" in rtype:
+                    st.error(f"❌ **GENUINE CONTRADICTION** (Confidence: {conf:.2f})")
+                elif "reconciliation" in rtype:
+                    st.warning(f"🔄 **CONTEXTUAL RECONCILIATION** (Confidence: {conf:.2f})")
+                else:
+                    st.info(f"ℹ️ **{rtype.upper()}** (Confidence: {conf:.2f})")
+
+                st.markdown(f"**System Reasoning & Evidence Analysis**:\n{rel.get('explanation', 'No explanation provided.')}")
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown("#### Fact A")
+                    if fact_a:
+                        st.markdown(f"**Claim**: {fact_a.get('claim')}")
+                        st.caption(f"📄 {fact_a.get('doc_filename', 'Unknown')} (Page {fact_a.get('page_number', 'N/A')})")
+                        st.markdown(f"> *\"{fact_a.get('source_quote', '')}\"*")
+                    else:
+                        st.write(f"Fact ID: {rel.get('fact_a_id')}")
+
+                with col2:
+                    st.markdown("#### Fact B")
+                    if fact_b:
+                        st.markdown(f"**Claim**: {fact_b.get('claim')}")
+                        st.caption(f"📄 {fact_b.get('doc_filename', 'Unknown')} (Page {fact_b.get('page_number', 'N/A')})")
+                        st.markdown(f"> *\"{fact_b.get('source_quote', '')}\"*")
+                    else:
+                        st.write(f"Fact ID: {rel.get('fact_b_id')}")
+
+                st.divider()
+    else:
+        st.warning("Backend API not reachable at http://localhost:8000.")
+
+elif page == "✅ Four Required Cases":
+    st.header("Four Required Analytical Cases")
+    st.markdown("Demonstration of the four required scenarios specified in the Superjoin problem statement.")
+
+    cases = fetch_data("/cases")
+
+    if cases is not None:
+        if not cases:
+            st.info("No cases identified yet. Process documents to discover cross-document relationships.")
+        else:
+            for case in cases:
+                c_num = case.get("case_number", "")
+                c_label = case.get("case_label", case.get("case_type", "Case"))
+                st.subheader(f"Case {c_num}: {c_label}")
+
+                if "Corroborat" in c_label:
+                    st.success(f"**Analysis**: {case.get('explanation', '')}")
+                elif "Contradiction" in c_label:
+                    st.error(f"**Analysis**: {case.get('explanation', '')}")
+                elif "Reconciliation" in c_label:
+                    st.warning(f"**Analysis**: {case.get('explanation', '')}")
+                else:
+                    st.info(f"**Analysis**: {case.get('explanation', '')}")
+
+                fact_a = case.get("fact_a")
+                fact_b = case.get("fact_b")
+
+                if fact_a and fact_b:
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.markdown("#### Evidence A")
+                        st.markdown(f"**Claim**: {fact_a.get('claim')}")
+                        st.caption(f"📄 {fact_a.get('doc_filename', 'Document')} (Page {fact_a.get('page_number')})")
+                        st.markdown(f"> *\"{fact_a.get('source_quote', '')}\"*")
+                    with col2:
+                        st.markdown("#### Evidence B")
+                        st.markdown(f"**Claim**: {fact_b.get('claim')}")
+                        st.caption(f"📄 {fact_b.get('doc_filename', 'Document')} (Page {fact_b.get('page_number')})")
+                        st.markdown(f"> *\"{fact_b.get('source_quote', '')}\"*")
+                elif fact_a:
+                    st.markdown("#### Isolated Fact / Failure Analysis")
+                    st.markdown(f"**Claim**: {fact_a.get('claim')}")
+                    st.caption(f"📄 {fact_a.get('doc_filename', 'Document')} (Page {fact_a.get('page_number')})")
+                    st.markdown(f"> *\"{fact_a.get('source_quote', '')}\"*")
+
+                st.divider()
+    else:
+        st.warning("Backend API not reachable at http://localhost:8000.")
+
+elif page == "📊 Export & Stats":
+    st.header("Export & System Statistics")
+    st.markdown("Download full structured knowledge layer state as JSON.")
+
+    export_data = fetch_data("/export")
+    if export_data:
+        summary = export_data.get("summary", {})
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Total Documents", summary.get("total_documents", 0))
+        c2.metric("Total Facts", summary.get("total_facts", 0))
+        c3.metric("Total Relationships", summary.get("total_relationships", 0))
+        c4.metric("Corroborations", summary.get("corroborations", 0))
+
+        c5, c6 = st.columns(2)
+        c5.metric("Contradictions", summary.get("contradictions", 0))
+        c6.metric("Contextual Reconciliations", summary.get("contextual_reconciliations", 0))
+
+        json_str = json.dumps(export_data, indent=2)
+        st.download_button(
+            label="📥 Download Knowledge Graph JSON",
+            data=json_str,
+            file_name="fact_knowledge_layer_export.json",
+            mime="application/json"
+        )
+
+        with st.expander("Preview Export JSON"):
+            st.json(export_data)
+    else:
+        st.warning("Backend API not reachable at http://localhost:8000.")
