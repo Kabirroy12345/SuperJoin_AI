@@ -175,22 +175,30 @@ class LLMAdapter:
                     val = m.group(1)
                     val_str = m.group(0)
 
-                    # Extract entity
-                    subject = "Delhivery Limited"
+                    # Dynamically discover entities from proper nouns and context
+                    caps = re.findall(r'\b[A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*)*\b', line)
+                    stop_caps = {'The', 'This', 'These', 'Total', 'In', 'Our', 'We', 'A', 'An', 'As', 'For', 'On', 'At', 'By', 'It', 'Its', 'Table', 'Figure', 'Section', 'Page', 'Report', 'Statement'}
+                    detected_entities = [c.strip() for c in caps if c not in stop_caps and len(c) > 2]
+
                     if cat == "personnel":
-                        subject = m.group(1)
+                        subject = m.group(1).strip()
                         obj_val = m.group(2).strip()
+                        entities = [subject, obj_val]
                     elif cat == "geographic":
+                        subject = detected_entities[0] if detected_entities else "Registered Location"
                         obj_val = m.group(1).strip()
+                        entities = detected_entities if detected_entities else [subject]
                     else:
+                        subject = detected_entities[0] if detected_entities else "Reporting Entity"
                         obj_val = val_str.strip()
+                        entities = detected_entities if detected_entities else [subject]
 
                     fact = {
                         "claim": line.strip(),
                         "subject": subject,
                         "predicate": pred,
                         "object_value": obj_val,
-                        "entities": [subject, "Delhivery"] if subject != "Delhivery" else ["Delhivery"],
+                        "entities": entities,
                         "entity_types": ["Person" if cat == "personnel" else "Organization"],
                         "attributes": {
                             "extracted_value": val,
@@ -205,13 +213,18 @@ class LLMAdapter:
                     matched = True
                     break
 
-            if not matched and any(kw in line.lower() for kw in ["total", "growth", "reported", "director", "office", "crore"]):
+            if not matched and any(kw in line.lower() for kw in ["total", "growth", "reported", "director", "office", "crore", "percent", "million"]):
+                caps = re.findall(r'\b[A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*)*\b', line)
+                stop_caps = {'The', 'This', 'These', 'Total', 'In', 'Our', 'We', 'A', 'An', 'As', 'For', 'On', 'At', 'By', 'It', 'Its', 'Table', 'Figure', 'Section', 'Page'}
+                detected_entities = [c.strip() for c in caps if c not in stop_caps and len(c) > 2]
+                fallback_subject = detected_entities[0] if detected_entities else "Reporting Entity"
+
                 facts.append({
                     "claim": line.strip(),
-                    "subject": "Delhivery",
+                    "subject": fallback_subject,
                     "predicate": "reported metric or disclosure",
                     "object_value": line[:80].strip(),
-                    "entities": ["Delhivery"],
+                    "entities": detected_entities if detected_entities else [fallback_subject],
                     "entity_types": ["Organization"],
                     "attributes": {"period": period or "unspecified"},
                     "category": "operational",

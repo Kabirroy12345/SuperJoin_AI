@@ -76,10 +76,10 @@ class Fact(BaseModel):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex)
 
     # --- Core fact triple ---
-    claim: str              # Human-readable: "Delhivery revenue in FY24 was ₹8,142 crore"
-    subject: str            # Main entity: "Delhivery"
+    claim: str              # Human-readable claim sentence
+    subject: str            # Main entity: "Acme Corp"
     predicate: str          # Attribute/relation: "annual revenue"
-    object_value: str       # Stated value/state: "₹8,142 crore"
+    object_value: str       # Stated value/state: "$5 million"
 
     # --- Source evidence (always present) ---
     doc_id: str
@@ -89,15 +89,15 @@ class Fact(BaseModel):
     chunk_id: str = ""
 
     # --- Entity tags for normalization & pairing ---
-    entities: list[str] = Field(default_factory=list)       # ["Delhivery", "Sahil Barua"]
-    entity_types: list[str] = Field(default_factory=list)   # ["company", "person"]
+    entities: list[str] = Field(default_factory=list)       # e.g., ["Acme Corp", "John Smith"]
+    entity_types: list[str] = Field(default_factory=list)   # e.g., ["organization", "person"]
 
     # --- Flexible attributes (evolving schema) ---
     attributes: dict[str, Any] = Field(default_factory=dict)
     # Examples:
-    #   {"value": 8142, "unit": "₹ crore", "period": "FY2024"}
-    #   {"role": "MD & CEO", "status": "active", "as_of": "2022"}
-    #   {"address_line": "...", "city": "Gurugram", "state": "Haryana"}
+    #   {"value": 5000000, "unit": "USD", "period": "2024"}
+    #   {"role": "Director", "status": "appointed", "year": "2023"}
+    #   {"city": "Metropolis", "country": "USA"}
 
     category: str = "general"   # financial, personnel, operational, geographic, ...
     confidence: float = 0.0     # 0–1, LLM self-assessed
