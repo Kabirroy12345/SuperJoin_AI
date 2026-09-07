@@ -158,11 +158,19 @@ def main() -> None:
         print(f"    Contradictions:   {results['summary']['contradictions']}")
         print(f"    Reconciliations:  {results['summary']['contextual_reconciliations']}")
 
-    # --- Start API server ---
+    # --- Start API & Dashboard server ---
     if args.serve:
         import uvicorn
-        print("\nStarting Fact Knowledge Layer API server...")
-        uvicorn.run("src.api.main:app", host="0.0.0.0", port=8000, reload=True)
+        import webbrowser
+        import threading
+        print("\n" + "="*60)
+        print("FACT KNOWLEDGE LAYER — WEB DASHBOARD & API")
+        print("="*60)
+        print("  🌐 Interactive Dashboard: http://localhost:8000/dashboard")
+        print("  📖 Swagger API Docs:      http://localhost:8000/docs")
+        print("="*60 + "\n")
+        threading.Timer(1.5, lambda: webbrowser.open("http://localhost:8000/dashboard")).start()
+        uvicorn.run("src.api.main:app", host="127.0.0.1", port=8000, reload=False)
 
 
 if __name__ == "__main__":

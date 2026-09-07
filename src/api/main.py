@@ -3,9 +3,10 @@ import shutil
 import tempfile
 from typing import List, Optional
 
-from fastapi import FastAPI, UploadFile, File, Query, HTTPException
+from fastapi import FastAPI, UploadFile, File, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
+from src.api.dashboard_html import get_dashboard_html
 
 from src.pipeline import Pipeline
 
@@ -27,14 +28,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/dashboard", response_class=HTMLResponse)
+def get_dashboard():
+    """Interactive Web Dashboard for viewing facts, cases, relationships, and uploading PDFs."""
+    return HTMLResponse(content=get_dashboard_html())
+
 @app.get("/")
-def read_root():
+def read_root(request: Request):
     """
-    Root endpoint returning a welcome message and available endpoints.
+    Root endpoint returning either the interactive Web Dashboard (for browsers)
+    or JSON welcome message with available endpoints.
     """
+    accept = request.headers.get("accept", "")
+    if "text/html" in accept and "application/json" not in accept:
+        return HTMLResponse(content=get_dashboard_html())
+
     return {
         "message": "Welcome to the Superjoin Fact Knowledge Layer API",
+        "dashboard": "http://localhost:8000/dashboard",
         "endpoints": [
+            "GET /dashboard - Interactive Web Dashboard",
             "POST /api/upload - Upload one or more PDFs",
             "GET /api/documents - List all ingested documents",
             "GET /api/facts - List facts (optional ?doc_id=)",
