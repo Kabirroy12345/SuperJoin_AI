@@ -4,6 +4,18 @@ import pandas as pd
 from typing import List, Dict, Any
 import json
 
+import sys
+import os
+import tempfile
+from pathlib import Path
+
+# Ensure project root is in sys.path
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.pipeline import Pipeline
+
 API_BASE_URL = "http://localhost:8000/api"
 
 st.set_page_config(page_title="Fact Knowledge Layer", page_icon="🔍", layout="wide")
@@ -11,14 +23,50 @@ st.set_page_config(page_title="Fact Knowledge Layer", page_icon="🔍", layout="
 st.title("🔍 Fact Knowledge Layer")
 st.markdown("Automated Fact Extraction, Evidence Grounding, and Cross-Document Reconciliation")
 
-@st.cache_data(ttl=15)
+@st.cache_resource
+def get_local_pipeline():
+    db_path = str(PROJECT_ROOT / "knowledge.db")
+    return Pipeline(db_path=db_path)
+
+@st.cache_data(ttl=5)
 def fetch_data(endpoint: str) -> Any:
+    # 1. Try REST API
     try:
-        response = requests.get(f"{API_BASE_URL}{endpoint}", timeout=20)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
+        response = requests.get(f"{API_BASE_URL}{endpoint}", timeout=1.5)
+        if response.status_code == 200:
+            return response.json()
+    except Exception:
+        pass
+
+    # 2. Seamless local pipeline fallback (standalone mode)
+    try:
+        p = get_local_pipeline()
+        if endpoint == "/documents":
+            docs = p.doc_store.get_all_documents()
+            return [d.model_dump() for d in docs]
+        elif endpoint.startswith("/facts"):
+            facts = p.fact_store.get_facts()
+            return [f.model_dump() for f in facts]
+        elif endpoint.startswith("/relationships"):
+            rels = p.rel_store.get_all()
+            enriched = []
+            for r in rels:
+                rd = r.model_dump()
+                fa = p.fact_store.get_fact(r.fact_a_id)
+                fb = p.fact_store.get_fact(r.fact_b_id)
+                rd["fact_a"] = fa.model_dump() if fa else None
+                rd["fact_b"] = fb.model_dump() if fb else None
+                enriched.append(rd)
+            return enriched
+        elif endpoint == "/cases":
+            cases = p.get_cases()
+            return [c.model_dump() for c in cases]
+        elif endpoint == "/export":
+            return p.export_results()
+    except Exception as e:
         return None
+
+    return None
 
 def _safe_float(val: Any, default: float = 0.0) -> float:
     try:
@@ -50,20 +98,42 @@ if page == "📤 Upload Documents":
                 status_text.text("Uploading and running extraction pipeline...")
                 progress_bar.progress(25)
                 try:
-                    files = {"file": (file.name, file.getvalue(), "application/pdf")}
-                    response = requests.post(f"{API_BASE_URL}/upload", files=files, timeout=600)
+                    # 1. Try via API
+                    processed = False
+                    try:
+                        files = {"file": (file.name, file.getvalue(), "application/pdf")}
+                        response = requests.post(f"{API_BASE_URL}/upload", files=files, timeout=600)
+                        if response.status_code == 200:
+                            result = response.json()
+                            progress_bar.progress(100)
+                            status_text.text("Processing complete!")
+                            st.success(f"Successfully processed {file.name}")
+                            with st.expander("Pipeline Output Details"):
+                                st.json(result)
+                            processed = True
+                    except Exception:
+                        pass
 
-                    if response.status_code == 200:
-                        result = response.json()
-                        progress_bar.progress(100)
-                        status_text.text("Processing complete!")
-                        st.success(f"Successfully processed {file.name}")
-                        with st.expander("Pipeline Output Details"):
-                            st.json(result)
-                    else:
-                        st.error(f"Failed to process {file.name}: {response.text}")
-                except requests.exceptions.RequestException as e:
-                    st.error(f"Connection error while uploading {file.name}: {e}")
+                    # 2. Local fallback if API is not running
+                    if not processed:
+                        temp_dir = tempfile.mkdtemp()
+                        temp_path = os.path.join(temp_dir, file.name)
+                        try:
+                            with open(temp_path, "wb") as buffer:
+                                buffer.write(file.getvalue())
+                            local_res = get_local_pipeline().ingest_document(temp_path)
+                            progress_bar.progress(100)
+                            status_text.text("Processing complete (local pipeline)!")
+                            st.success(f"Successfully processed {file.name}")
+                            with st.expander("Pipeline Output Details"):
+                                st.json(local_res)
+                        finally:
+                            if os.path.exists(temp_path):
+                                os.remove(temp_path)
+                            if os.path.exists(temp_dir):
+                                os.rmdir(temp_dir)
+                except Exception as e:
+                    st.error(f"Error while processing {file.name}: {e}")
 
                 st.divider()
 
