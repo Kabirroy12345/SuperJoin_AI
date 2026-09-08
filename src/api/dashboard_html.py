@@ -35,7 +35,7 @@ def get_dashboard_html() -> str:
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
     .glass-nav {
-      background: rgba(15, 23, 42, 0.85);
+      background: rgba(15, 23, 42, 0.92);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
     }
@@ -54,10 +54,12 @@ def get_dashboard_html() -> str:
       background: #475569;
     }
     .case-card.active-case {
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25), 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3), 0 10px 25px -5px rgba(0, 0, 0, 0.4);
       transform: translateY(-2px);
     }
+    .hidden { display: none !important; }
+    .nav-tab.active { background-color: #2563eb !important; color: #ffffff !important; }
   </style>
 </head>
 <body class="h-full text-slate-100 bg-slate-950 flex flex-col antialiased selection:bg-blue-500 selection:text-white">
@@ -68,7 +70,7 @@ def get_dashboard_html() -> str:
       <div class="flex items-center justify-between h-16 gap-4">
         
         <!-- Logo & Title -->
-        <div class="flex items-center space-x-3.5">
+        <div class="flex items-center space-x-3.5 cursor-pointer" onclick="switchTab('cases')">
           <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 ring-1 ring-white/20">
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -81,7 +83,7 @@ def get_dashboard_html() -> str:
                 Superjoin Studio
               </span>
             </div>
-            <p class="text-[11px] text-slate-400 hidden sm:block">Automated Cross-Document Evidence Reconciliation & Verification</p>
+            <p class="text-[11px] text-slate-400 hidden sm:block">Cross-Document Evidence Grounding & Automated Reconciliation</p>
           </div>
         </div>
 
@@ -89,21 +91,21 @@ def get_dashboard_html() -> str:
         <div class="flex items-center space-x-3">
           <div class="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 text-xs">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span class="text-slate-300 font-medium">Engine Active</span>
+            <span class="text-slate-300 font-medium">Ready</span>
             <span class="text-slate-600">|</span>
-            <span class="text-slate-400 font-mono" id="header-stats">3 Docs &bull; 258 Facts</span>
+            <span class="text-slate-400 font-mono" id="header-stats">3 Docs • 258 Facts • 47 Rels</span>
           </div>
 
-          <button onclick="confirmReset()" title="Restore benchmark Delhivery dataset" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700/80 text-xs font-semibold transition">
+          <button onclick="confirmReset()" title="Restore benchmark Delhivery dataset" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700/80 text-xs font-semibold transition shadow-sm">
             <svg class="w-3.5 h-3.5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
             <span>Reset to Benchmark</span>
           </button>
 
-          <a href="/docs" target="_blank" class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-sm transition">
+          <a href="/docs" target="_blank" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700/80 text-xs font-semibold transition shadow-sm">
             <span>API Docs</span>
-            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-3 h-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
           </a>
@@ -113,19 +115,22 @@ def get_dashboard_html() -> str:
 
       <!-- Navigation Tabs -->
       <nav class="flex space-x-1 border-t border-slate-800/70 overflow-x-auto py-2 custom-scrollbar">
-        <button onclick="switchTab('cases')" id="tab-cases-btn" class="nav-tab active px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-600 shadow-sm transition whitespace-nowrap flex items-center space-x-1.5">
+        <button type="button" onclick="switchTab('cases')" id="tab-cases-btn" class="nav-tab active px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-600 shadow-sm transition whitespace-nowrap flex items-center space-x-1.5">
           <span>✨</span> <span>The 4 Required Cases</span>
         </button>
-        <button onclick="switchTab('facts')" id="tab-facts-btn" class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition whitespace-nowrap flex items-center space-x-1.5">
-          <span>🔍</span> <span>Facts Explorer (<span id="count-facts">0</span>)</span>
+        <button type="button" onclick="switchTab('documents')" id="tab-documents-btn" class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition whitespace-nowrap flex items-center space-x-1.5">
+          <span>📄</span> <span>Data PDFs (<span id="count-docs-nav">3</span>)</span>
         </button>
-        <button onclick="switchTab('relationships')" id="tab-relationships-btn" class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition whitespace-nowrap flex items-center space-x-1.5">
-          <span>🔗</span> <span>All Relationships (<span id="count-rels">0</span>)</span>
+        <button type="button" onclick="switchTab('facts')" id="tab-facts-btn" class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition whitespace-nowrap flex items-center space-x-1.5">
+          <span>🔍</span> <span>Facts Explorer (<span id="count-facts">258</span>)</span>
         </button>
-        <button onclick="switchTab('upload')" id="tab-upload-btn" class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition whitespace-nowrap flex items-center space-x-1.5">
-          <span>📤</span> <span>Multi-PDF Ingestion (<span id="count-docs">0</span>)</span>
+        <button type="button" onclick="switchTab('relationships')" id="tab-relationships-btn" class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition whitespace-nowrap flex items-center space-x-1.5">
+          <span>🔗</span> <span>All Relationships (<span id="count-rels">47</span>)</span>
         </button>
-        <button onclick="switchTab('export')" id="tab-export-btn" class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition whitespace-nowrap flex items-center space-x-1.5">
+        <button type="button" onclick="switchTab('upload')" id="tab-upload-btn" class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition whitespace-nowrap flex items-center space-x-1.5">
+          <span>📤</span> <span>Upload & Ingestion</span>
+        </button>
+        <button type="button" onclick="switchTab('export')" id="tab-export-btn" class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition whitespace-nowrap flex items-center space-x-1.5">
           <span>📊</span> <span>Knowledge Graph JSON</span>
         </button>
       </nav>
@@ -140,31 +145,40 @@ def get_dashboard_html() -> str:
     <!-- ======================================================== -->
     <section id="view-cases" class="space-y-6">
       
-      <!-- Scope Filter Header -->
-      <div class="bg-slate-900 border border-slate-800/90 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div class="flex items-center space-x-2">
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-              Evaluation Center
-            </span>
-            <span class="text-xs text-slate-400">&bull; Ground-Truth Cross-Document Verification</span>
+      <!-- Scope Filter Header & Quick Doc Badges -->
+      <div class="bg-slate-900 border border-slate-800/90 rounded-2xl p-5 shadow-xl space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white tracking-tight flex items-center space-x-2">
+              <span>Executive Verification Suite</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Interactive demonstration of the 4 required analytical scenarios with side-by-side evidence diffs.
+            </p>
           </div>
-          <h2 class="text-lg font-extrabold text-white mt-1">Superjoin Four Analytical Scenarios</h2>
-          <p class="text-xs text-slate-400 mt-0.5">
-            Click any scenario card below to inspect side-by-side evidence diffs, verbatim quotes, and system reasoning.
-          </p>
+
+          <div class="flex items-center space-x-3 w-full md:w-auto">
+            <label for="case-doc-filter" class="text-xs font-semibold text-slate-300 whitespace-nowrap flex items-center space-x-1.5">
+              <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              <span>Document Scope:</span>
+            </label>
+            <select id="case-doc-filter" onchange="onCaseDocFilterChange()" class="w-full md:w-72 bg-slate-950 text-white text-xs rounded-xl border border-slate-700 px-3.5 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
+              <option value="">All Documents (Global Knowledge Base)</option>
+            </select>
+          </div>
         </div>
 
-        <div class="flex items-center space-x-3 w-full md:w-auto">
-          <label for="case-doc-filter" class="text-xs font-semibold text-slate-300 whitespace-nowrap flex items-center space-x-1.5">
-            <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
-            <span>Document Scope:</span>
-          </label>
-          <select id="case-doc-filter" onchange="onCaseDocFilterChange()" class="w-full md:w-72 bg-slate-950 text-white text-xs rounded-xl border border-slate-700 px-3.5 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
-            <option value="">All Documents (Global Knowledge Base)</option>
-          </select>
+        <!-- Ingested Data Filings Quick Bar -->
+        <div class="pt-3 border-t border-slate-800/80">
+          <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center justify-between">
+            <span>📚 Ingested Data Filings (Ground-Truth Corpus):</span>
+            <button type="button" onclick="switchTab('documents')" class="text-blue-400 hover:text-blue-300 normal-case font-medium">View detailed PDF cards &rarr;</button>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5" id="active-docs-banner">
+            <!-- Rendered by JS -->
+          </div>
         </div>
       </div>
 
@@ -228,202 +242,241 @@ def get_dashboard_html() -> str:
             <span class="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-sm shadow-purple-500/50"></span>
           </div>
           <h3 class="font-bold text-sm text-white mt-2 group-hover:text-purple-300 transition">Extraction Limitation</h3>
-          <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">PDF spatial layout challenge & architectural mitigation.</p>
+          <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">Visual layout / tabular challenges & engineering mitigations.</p>
           <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Analyzed:</span>
+            <span>Identified:</span>
             <span class="font-semibold text-purple-400" id="badge-limits-count">10 instances</span>
           </div>
         </div>
 
       </div>
 
-      <!-- Spotlight Evidence Arena (Side-by-Side Comparison) -->
-      <div id="spotlight-display-arena" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
-        <div class="p-8 text-center text-slate-500 animate-pulse">Loading verified case evidence...</div>
+      <!-- Spotlight Comparison Arena -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-5" id="spotlight-display-arena">
+        <div class="p-8 text-center text-slate-500">Loading verified scenario evidence diff...</div>
       </div>
 
-      <!-- Instance Drawer / Categorized Browser -->
-      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+      <!-- Instance Drawer (Expandable Categorized List) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
           <div>
-            <h4 class="font-bold text-sm text-white flex items-center space-x-2">
-              <span>📚</span> <span id="category-drawer-title">All Discovered Corroborations</span>
-            </h4>
-            <p class="text-xs text-slate-400 mt-0.5">Explore every verified instance identified by the reconciliation engine.</p>
+            <h3 class="font-bold text-sm text-white" id="category-drawer-title">All Discovered Corroborations</h3>
+            <p class="text-xs text-slate-400">Browse every reconciled evidence pair discovered across filings.</p>
           </div>
-          <div class="flex flex-wrap gap-1.5" id="category-filter-pills">
-            <button onclick="switchCategoryView('corroborations')" id="cat-btn-corroborations" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition">Corroborations</button>
-            <button onclick="switchCategoryView('contradictions')" id="cat-btn-contradictions" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 hover:text-white border border-slate-700 transition">Contradictions</button>
-            <button onclick="switchCategoryView('reconciliations')" id="cat-btn-reconciliations" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 hover:text-white border border-slate-700 transition">Reconciliations</button>
-            <button onclick="switchCategoryView('limitations')" id="cat-btn-limitations" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 hover:text-white border border-slate-700 transition">Limitations</button>
+          <div class="flex items-center space-x-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button type="button" onclick="switchCategoryView('corroborations')" id="cat-btn-corroborations" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white shadow-sm transition">Corroborations</button>
+            <button type="button" onclick="switchCategoryView('contradictions')" id="cat-btn-contradictions" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 hover:text-white border border-slate-700 transition">Contradictions</button>
+            <button type="button" onclick="switchCategoryView('reconciliations')" id="cat-btn-reconciliations" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 hover:text-white border border-slate-700 transition">Reconciliations</button>
+            <button type="button" onclick="switchCategoryView('limitations')" id="cat-btn-limitations" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 hover:text-white border border-slate-700 transition">Limitations</button>
           </div>
         </div>
 
-        <div id="category-instances-container" class="space-y-3 max-h-[480px] overflow-y-auto pr-1 custom-scrollbar"></div>
+        <div class="space-y-3 max-h-96 overflow-y-auto custom-scrollbar pr-1" id="category-instances-container">
+          <div class="p-4 text-center text-slate-500 text-xs">Loading instances...</div>
+        </div>
       </div>
 
     </section>
 
     <!-- ======================================================== -->
-    <!-- VIEW 2: FACTS EXPLORER -->
+    <!-- VIEW 2: DATA PDFS (SOURCE FILINGS VIEW) -->
+    <!-- ======================================================== -->
+    <section id="view-documents" class="space-y-6 hidden">
+      <div class="bg-slate-900 border border-slate-800/90 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-white tracking-tight flex items-center space-x-2">
+            <span>📄</span> <span>Ingested Knowledge Base Filings</span>
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">
+            Full repository of source documents parsed, chunked, and indexed with ground-truth evidence quotes and page numbers.
+          </p>
+        </div>
+        <button type="button" onclick="switchTab('upload')" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-600/20 transition flex items-center space-x-1.5 self-start md:self-auto">
+          <span>+ Ingest Additional PDFs</span>
+        </button>
+      </div>
+
+      <!-- Detailed Documents Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5" id="documents-showcase-grid">
+        <div class="p-8 text-center text-slate-500 col-span-3">Loading documents...</div>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- VIEW 3: FACTS EXPLORER -->
     <!-- ======================================================== -->
     <section id="view-facts" class="space-y-6 hidden">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
-        <div class="flex flex-col sm:flex-row gap-3">
-          <div class="relative flex-1">
-            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-              <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <input type="text" id="fact-search" oninput="filterFacts()" placeholder="Search extracted claims, entities, or metrics (e.g. revenue, EBITDA, appointed)..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 text-white text-xs border border-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white tracking-tight">Facts Explorer</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Browse atomic extracted facts with citations, entities, and attributes.</p>
           </div>
-          <div class="w-full sm:w-72">
-            <select id="doc-filter" onchange="filterFacts()" class="w-full bg-slate-950 text-white text-xs rounded-xl border border-slate-700 px-3.5 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
+          <span class="text-xs text-slate-400 font-mono" id="facts-counter-text">Showing facts...</span>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div class="md:col-span-2 relative">
+            <input type="text" id="fact-search" oninput="filterFacts()" placeholder="Search claims, subjects, entities, or keywords..." class="w-full bg-slate-950 text-white text-xs rounded-xl border border-slate-800 px-4 py-2.5 pl-9 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
+            <svg class="w-4 h-4 text-slate-500 absolute left-3 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <div>
+            <select id="doc-filter" onchange="filterFacts()" class="w-full bg-slate-950 text-white text-xs rounded-xl border border-slate-800 px-3.5 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
               <option value="all">All Documents</option>
             </select>
           </div>
         </div>
-
-        <div class="flex items-center justify-between text-xs text-slate-400 border-t border-slate-800/80 pt-3">
-          <span id="facts-counter-text">Showing 0 facts</span>
-          <span class="text-[11px] text-slate-500">Atomic factual triples with verbatim ground quotes</span>
-        </div>
       </div>
 
-      <div id="facts-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      <!-- Facts Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="facts-container">
+        <div class="p-8 text-center text-slate-500 col-span-2">Loading facts...</div>
+      </div>
     </section>
 
     <!-- ======================================================== -->
-    <!-- VIEW 3: ALL RELATIONSHIPS -->
+    <!-- VIEW 4: ALL RELATIONSHIPS -->
     <!-- ======================================================== -->
     <section id="view-relationships" class="space-y-6 hidden">
-      <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
-        <div class="flex flex-wrap gap-2">
-          <button onclick="filterRelationships('all')" id="filter-rel-all" class="rel-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-sm transition">All Relationships</button>
-          <button onclick="filterRelationships('corroboration')" id="filter-rel-corroboration" class="rel-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition">Corroborations</button>
-          <button onclick="filterRelationships('contradiction')" id="filter-rel-contradiction" class="rel-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition">Contradictions</button>
-          <button onclick="filterRelationships('contextual_reconciliation')" id="filter-rel-contextual_reconciliation" class="rel-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition">Reconciliations</button>
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-white tracking-tight">Cross-Document Relationships</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Semantic pairings evaluated and classified by the reconciliation engine.</p>
         </div>
-        <span class="text-xs text-slate-400 font-mono" id="rel-filter-count">Showing 0 relationships</span>
+
+        <!-- Type Filter Buttons -->
+        <div class="flex items-center space-x-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <button type="button" onclick="filterRelationships('all')" id="filter-rel-all" class="rel-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-sm transition">All</button>
+          <button type="button" onclick="filterRelationships('corroboration')" id="filter-rel-corroboration" class="rel-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition">Corroborations</button>
+          <button type="button" onclick="filterRelationships('contradiction')" id="filter-rel-contradiction" class="rel-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition">Contradictions</button>
+          <button type="button" onclick="filterRelationships('contextual_reconciliation')" id="filter-rel-contextual_reconciliation" class="rel-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition">Reconciliations</button>
+        </div>
       </div>
 
-      <div id="relationships-container" class="space-y-4"></div>
+      <div class="text-xs text-slate-400 font-mono" id="rel-filter-count">Showing relationships...</div>
+
+      <div class="space-y-4" id="relationships-container">
+        <div class="p-8 text-center text-slate-500">Loading relationships...</div>
+      </div>
     </section>
 
     <!-- ======================================================== -->
-    <!-- VIEW 4: MULTI-PDF BATCH INGESTION -->
+    <!-- VIEW 5: MULTI-PDF INGESTION STUDIO -->
     <!-- ======================================================== -->
     <section id="view-upload" class="space-y-6 hidden">
-      <div class="max-w-3xl mx-auto bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
-        <div class="text-center space-y-2">
-          <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30 ring-1 ring-white/20">
-            <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Upload Studio Box -->
+        <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+          <div>
+            <h2 class="text-lg font-bold text-white tracking-tight">Batch PDF Ingestion Studio</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Select or drop one or multiple PDF documents to parse, extract facts, and reconcile.</p>
           </div>
-          <h3 class="text-xl font-extrabold text-white">Batch Document Ingestion Studio</h3>
-          <p class="text-xs text-slate-400 max-w-md mx-auto">
-            Upload single or multiple PDFs at once. The engine will parse tables, extract facts, generate 3,072-dim embeddings, and reconcile against all indexed documents.
-          </p>
+
+          <!-- Dropzone -->
+          <form id="upload-form" onsubmit="handleBatchUpload(event)">
+            <label for="pdf-file-input" class="flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-700 hover:border-blue-500 rounded-2xl cursor-pointer bg-slate-950/60 hover:bg-slate-950 transition group">
+              <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center group-hover:scale-110 transition duration-200 mb-3">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+              </div>
+              <p class="text-xs font-semibold text-slate-200 mb-1">Click to browse or drag and drop PDFs here</p>
+              <p class="text-[11px] text-slate-500">Supports batch selection (.pdf format)</p>
+              <input type="file" id="pdf-file-input" multiple accept=".pdf" class="hidden" onchange="handleFileSelect(event)">
+            </label>
+
+            <!-- File List Chips -->
+            <div id="selected-files-container" class="mt-4 hidden space-y-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-semibold text-slate-300">Selected Files (<span id="selected-files-count">0</span>):</span>
+                <button type="button" onclick="clearSelectedFiles()" class="text-rose-400 hover:text-rose-300 text-[11px]">Clear All</button>
+              </div>
+              <div id="file-chips-list" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <!-- Ingest Action Button -->
+            <div class="mt-5 flex justify-end">
+              <button type="submit" id="upload-btn" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-600/20 transition flex items-center space-x-2">
+                <span>Start Ingestion & Reconciliation</span>
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </button>
+            </div>
+          </form>
+
+          <!-- Upload Progress & Status Alert -->
+          <div id="upload-status" class="hidden p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+            <div class="flex justify-between items-center text-xs">
+              <span class="font-semibold text-white" id="upload-status-title">Ingesting PDFs...</span>
+              <span class="text-blue-400 font-mono" id="upload-status-pct">0%</span>
+            </div>
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+              <div id="upload-progress-bar" class="bg-gradient-to-r from-blue-500 to-indigo-500 h-full w-0 transition-all duration-300"></div>
+            </div>
+            <p class="text-[11px] text-slate-400" id="upload-status-text">Parsing text and extracting facts...</p>
+          </div>
         </div>
 
-        <form onsubmit="handleBatchUpload(event)" class="space-y-4">
-          <div onclick="document.getElementById('pdf-file-input').click()" class="border-2 border-dashed border-slate-700 hover:border-blue-500 rounded-2xl p-8 text-center cursor-pointer bg-slate-950/60 hover:bg-slate-950 transition duration-200 group">
-            <input type="file" id="pdf-file-input" multiple accept=".pdf" onchange="handleFileSelect(event)" class="hidden">
-            <div class="w-12 h-12 mx-auto rounded-xl bg-slate-800 group-hover:bg-blue-600/20 text-slate-400 group-hover:text-blue-400 flex items-center justify-center transition">
-              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <p class="text-sm font-semibold text-slate-200 mt-3">Click to select or drag & drop PDF files</p>
-            <p class="text-[11px] text-slate-500 mt-1">Accepts multiple corporate disclosures, annual reports, earnings calls, or macro filings</p>
+        <!-- Ingested Documents List Sidecard -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-sm text-white">Indexed Documents</h3>
+            <span class="text-xs text-blue-400 font-mono" id="ingested-docs-count">0 documents</span>
           </div>
-
-          <!-- File selection preview -->
-          <div id="selected-files-container" class="space-y-2 hidden bg-slate-950 p-4 rounded-xl border border-slate-800">
-            <div class="flex justify-between items-center text-xs font-semibold text-slate-400">
-              <span>Selected PDFs (<span id="selected-files-count">0</span>)</span>
-              <button type="button" onclick="clearSelectedFiles()" class="text-rose-400 hover:text-rose-300 transition">Clear All</button>
-            </div>
-            <div id="file-chips-list" class="flex flex-wrap gap-2 pt-1"></div>
+          <div id="ingested-docs-list" class="space-y-2.5 max-h-96 overflow-y-auto custom-scrollbar pr-1">
+            <div class="text-xs text-slate-500 italic p-3">Loading documents...</div>
           </div>
-
-          <button type="submit" id="upload-btn" class="w-full py-3.5 px-5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-blue-500/25 transition flex items-center justify-center space-x-2">
-            <span>⚡ Start Ingestion & Reconciliation</span>
-          </button>
-        </form>
-
-        <!-- Progress Tracker -->
-        <div id="upload-status" class="hidden bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
-          <div class="flex justify-between items-center text-xs">
-            <span id="upload-status-title" class="font-semibold text-slate-200">Processing queue...</span>
-            <span id="upload-status-pct" class="font-mono text-blue-400">0%</span>
-          </div>
-          <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-            <div id="upload-progress-bar" class="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full w-0 transition-all duration-300"></div>
-          </div>
-          <p id="upload-status-text" class="text-[11px] text-slate-400 font-mono"></p>
-        </div>
-
-        <!-- Ingested Documents Registry -->
-        <div class="border-t border-slate-800 pt-5 space-y-3">
-          <div class="flex justify-between items-center text-xs">
-            <span class="font-bold uppercase tracking-wider text-slate-400">Indexed Knowledge Repositories</span>
-            <span class="font-mono text-slate-500" id="ingested-docs-count">0 documents</span>
-          </div>
-          <div id="ingested-docs-list" class="space-y-2"></div>
         </div>
 
       </div>
     </section>
 
     <!-- ======================================================== -->
-    <!-- VIEW 5: EXPORT & KNOWLEDGE GRAPH JSON -->
+    <!-- VIEW 6: KNOWLEDGE GRAPH JSON & EXPORT -->
     <!-- ======================================================== -->
     <section id="view-export" class="space-y-6 hidden">
-      <!-- KPI Stats -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ingested Filings</span>
-          <div class="text-3xl font-extrabold text-white mt-1" id="stat-docs">0</div>
-          <span class="text-[11px] text-slate-500 mt-1 block">Full document store</span>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Semantic Facts</span>
-          <div class="text-3xl font-extrabold text-blue-400 mt-1" id="stat-facts">0</div>
-          <span class="text-[11px] text-slate-500 mt-1 block">Atomic verified triples</span>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Relationships</span>
-          <div class="text-3xl font-extrabold text-emerald-400 mt-1" id="stat-rels">0</div>
-          <span class="text-[11px] text-slate-500 mt-1 block">Cross-filing links</span>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Contradictions</span>
-          <div class="text-3xl font-extrabold text-rose-400 mt-1" id="stat-contras">0</div>
-          <span class="text-[11px] text-slate-500 mt-1 block">Direct conflicts resolved</span>
-        </div>
-      </div>
-
-      <!-- JSON Viewer -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h3 class="font-bold text-white text-base">Knowledge Graph Export & Serialization</h3>
-            <p class="text-xs text-slate-400 mt-0.5">Full machine-readable snapshot containing documents, grounded facts, and reconciliation graph.</p>
+            <h2 class="text-lg font-bold text-white tracking-tight">Knowledge Graph Export</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Machine-readable JSON schema containing documents, facts, and relationships.</p>
           </div>
           <div class="flex items-center space-x-2">
-            <button onclick="copyExportJson()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition border border-slate-700">
+            <button type="button" onclick="copyExportJson()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-xs font-semibold transition">
               📋 Copy JSON
             </button>
-            <a href="/api/export" download="results.json" class="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition shadow-sm">
-              📥 Download results.json
+            <a href="/api/export" download="knowledge_graph_export.json" class="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition shadow-sm">
+              ⬇️ Download File
             </a>
           </div>
         </div>
 
-        <pre id="json-preview" class="bg-slate-950 p-4 rounded-xl text-xs font-mono text-slate-300 overflow-x-auto max-h-[500px] border border-slate-800/80 custom-scrollbar"></pre>
+        <!-- Metric Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Documents</span>
+            <span class="text-xl font-extrabold text-white" id="stat-docs">3</span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Facts</span>
+            <span class="text-xl font-extrabold text-white" id="stat-facts">258</span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Relationships</span>
+            <span class="text-xl font-extrabold text-white" id="stat-rels">47</span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Contradictions</span>
+            <span class="text-xl font-extrabold text-rose-400" id="stat-contras">2</span>
+          </div>
+        </div>
+
+        <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs font-mono text-slate-300 max-h-96 overflow-y-auto custom-scrollbar" id="json-preview">Loading Knowledge Graph JSON...</pre>
       </div>
     </section>
 
@@ -440,25 +493,36 @@ def get_dashboard_html() -> str:
     let selectedFiles = [];
 
     async function init() {
-      await loadDocuments();
-      await loadCasesBreakdown();
-      await loadFacts();
-      await loadRelationships();
-      await loadExport();
+      // Parallel fetch using Promise.allSettled for maximum resilience & speed
+      await Promise.allSettled([
+        loadDocuments(),
+        loadCasesBreakdown(),
+        loadFacts(),
+        loadRelationships(),
+        loadExport()
+      ]);
     }
 
     function switchTab(tabId) {
-      ['cases', 'facts', 'relationships', 'upload', 'export'].forEach(t => {
+      const tabs = ['cases', 'documents', 'facts', 'relationships', 'upload', 'export'];
+      tabs.forEach(t => {
         const view = document.getElementById(`view-${t}`);
         const btn = document.getElementById(`tab-${t}-btn`);
-        if (t === tabId) {
-          view.classList.remove('hidden');
-          btn.classList.add('active', 'bg-blue-600', 'text-white');
-          btn.classList.remove('text-slate-400', 'hover:bg-slate-800/60');
-        } else {
-          view.classList.add('hidden');
-          btn.classList.remove('active', 'bg-blue-600', 'text-white');
-          btn.classList.add('text-slate-400', 'hover:bg-slate-800/60');
+        if (view) {
+          if (t === tabId) {
+            view.style.display = 'block';
+            view.classList.remove('hidden');
+          } else {
+            view.style.display = 'none';
+            view.classList.add('hidden');
+          }
+        }
+        if (btn) {
+          if (t === tabId) {
+            btn.className = 'nav-tab active px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-600 shadow-sm transition whitespace-nowrap flex items-center space-x-1.5';
+          } else {
+            btn.className = 'nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition whitespace-nowrap flex items-center space-x-1.5';
+          }
         }
       });
     }
@@ -467,39 +531,127 @@ def get_dashboard_html() -> str:
       try {
         const res = await fetch('/api/documents');
         rawDocuments = await res.json();
-        document.getElementById('count-docs').innerText = rawDocuments.length;
-        document.getElementById('ingested-docs-count').innerText = `${rawDocuments.length} documents`;
+        
+        const count = rawDocuments.length;
+        const navCount = document.getElementById('count-docs-nav');
+        if (navCount) navCount.innerText = count;
+        
+        const ingCount = document.getElementById('ingested-docs-count');
+        if (ingCount) ingCount.innerText = `${count} documents`;
 
+        // Update case document filter dropdown
         const caseDocSelect = document.getElementById('case-doc-filter');
-        const prevVal = caseDocSelect.value;
-        caseDocSelect.innerHTML = '<option value="">All Documents (Global Knowledge Base)</option>' +
-          rawDocuments.map(d => `<option value="${d.id}">${d.filename} (${d.page_count} pgs)</option>`).join('');
-        if (prevVal) caseDocSelect.value = prevVal;
+        if (caseDocSelect) {
+          const prevVal = caseDocSelect.value;
+          caseDocSelect.innerHTML = '<option value="">All Documents (Global Knowledge Base)</option>' +
+            rawDocuments.map(d => `<option value="${d.id}">${d.filename} (${d.page_count} pgs)</option>`).join('');
+          if (prevVal) caseDocSelect.value = prevVal;
+        }
 
+        // Update facts explorer document dropdown
         const docSelect = document.getElementById('doc-filter');
-        docSelect.innerHTML = '<option value="all">All Documents</option>' +
-          rawDocuments.map(d => `<option value="${d.filename}">${d.filename}</option>`).join('');
+        if (docSelect) {
+          docSelect.innerHTML = '<option value="all">All Documents</option>' +
+            rawDocuments.map(d => `<option value="${d.filename}">${d.filename}</option>`).join('');
+        }
 
-        const listDiv = document.getElementById('ingested-docs-list');
-        if (!rawDocuments.length) {
-          listDiv.innerHTML = '<div class="text-xs text-slate-500 italic p-3 rounded-lg bg-slate-950 border border-slate-800">No documents ingested. Upload PDFs above.</div>';
-        } else {
-          listDiv.innerHTML = rawDocuments.map(d => `
-            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-              <div class="flex items-center space-x-3">
-                <span class="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-xs">PDF</span>
-                <div>
-                  <div class="font-bold text-white">${d.filename}</div>
-                  <div class="text-slate-400 text-[11px]">${d.page_count} pages &bull; Indexed in knowledge store</div>
+        // Update active docs banner on the Overview tab
+        const banner = document.getElementById('active-docs-banner');
+        if (banner) {
+          banner.innerHTML = rawDocuments.map(d => `
+            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs group hover:border-slate-700 transition">
+              <div class="flex items-center space-x-2.5 min-w-0">
+                <span class="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-[10px]">PDF</span>
+                <div class="min-w-0 truncate">
+                  <div class="font-bold text-white truncate" title="${d.filename}">${d.filename}</div>
+                  <div class="text-[10px] text-slate-400">${d.page_count} Pages &bull; Indexed</div>
                 </div>
               </div>
-              <span class="text-[11px] text-slate-500 font-mono">${(d.upload_time || '').split('T')[0]}</span>
+              <button type="button" onclick="inspectDocCases('${d.id}')" class="ml-2 px-2 py-1 rounded bg-slate-900 hover:bg-blue-600 text-slate-300 hover:text-white text-[10px] font-semibold border border-slate-700 transition whitespace-nowrap">Filter</button>
             </div>
           `).join('');
+        }
+
+        // Update dedicated documents showcase grid
+        const grid = document.getElementById('documents-showcase-grid');
+        if (grid) {
+          grid.innerHTML = rawDocuments.map((d, i) => `
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4 hover:border-slate-700 transition flex flex-col justify-between">
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                    Filing #${i + 1}
+                  </span>
+                  <span class="text-[11px] text-slate-500 font-mono">${(d.upload_time || '').split('T')[0]}</span>
+                </div>
+                <div>
+                  <h4 class="font-bold text-sm text-white leading-snug break-words">${d.filename}</h4>
+                  <p class="text-xs text-slate-400 mt-1">Ground-truth PDF ingested with page-indexed text & table chunks.</p>
+                </div>
+                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80 text-xs">
+                  <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                    <span class="text-[10px] font-bold text-slate-500 block">Total Pages:</span>
+                    <span class="text-sm font-extrabold text-white font-mono">${d.page_count}</span>
+                  </div>
+                  <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                    <span class="text-[10px] font-bold text-slate-500 block">Status:</span>
+                    <span class="text-xs font-bold text-emerald-400">Indexed &bull; Active</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center space-x-2 pt-3 border-t border-slate-800/80">
+                <button type="button" onclick="inspectDocCases('${d.id}')" class="flex-1 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition text-center shadow-sm">
+                  ✨ View Cases
+                </button>
+                <button type="button" onclick="inspectDocFacts('${d.filename}')" class="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-xs font-semibold transition text-center">
+                  🔍 View Facts
+                </button>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        // Update list on upload tab
+        const listDiv = document.getElementById('ingested-docs-list');
+        if (listDiv) {
+          if (!rawDocuments.length) {
+            listDiv.innerHTML = '<div class="text-xs text-slate-500 italic p-3 rounded-lg bg-slate-950 border border-slate-800">No documents ingested. Upload PDFs above.</div>';
+          } else {
+            listDiv.innerHTML = rawDocuments.map(d => `
+              <div class="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+                <div class="flex items-center space-x-3">
+                  <span class="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-xs">PDF</span>
+                  <div>
+                    <div class="font-bold text-white">${d.filename}</div>
+                    <div class="text-slate-400 text-[11px]">${d.page_count} pages &bull; Indexed in knowledge store</div>
+                  </div>
+                </div>
+                <span class="text-[11px] text-slate-500 font-mono">${(d.upload_time || '').split('T')[0]}</span>
+              </div>
+            `).join('');
+          }
         }
       } catch (e) {
         console.error('Failed to load documents', e);
       }
+    }
+
+    function inspectDocCases(docId) {
+      const select = document.getElementById('case-doc-filter');
+      if (select) {
+        select.value = docId;
+        onCaseDocFilterChange();
+      }
+      switchTab('cases');
+    }
+
+    function inspectDocFacts(filename) {
+      const select = document.getElementById('doc-filter');
+      if (select) {
+        select.value = filename;
+        filterFacts();
+      }
+      switchTab('facts');
     }
 
     async function onCaseDocFilterChange() {
@@ -520,10 +672,14 @@ def get_dashboard_html() -> str:
         const nRec = counts.reconciliations ?? (casesBreakdown.reconciliations ? casesBreakdown.reconciliations.length : 0);
         const nLim = counts.limitations ?? (casesBreakdown.limitations ? casesBreakdown.limitations.length : 0);
 
-        document.getElementById('badge-corrobs-count').innerText = `${nCorrob} instances`;
-        document.getElementById('badge-contras-count').innerText = `${nContra} instances`;
-        document.getElementById('badge-recs-count').innerText = `${nRec} instances`;
-        document.getElementById('badge-limits-count').innerText = `${nLim} instances`;
+        const bCorrob = document.getElementById('badge-corrobs-count');
+        if (bCorrob) bCorrob.innerText = `${nCorrob} instances`;
+        const bContra = document.getElementById('badge-contras-count');
+        if (bContra) bContra.innerText = `${nContra} instances`;
+        const bRec = document.getElementById('badge-recs-count');
+        if (bRec) bRec.innerText = `${nRec} instances`;
+        const bLim = document.getElementById('badge-limits-count');
+        if (bLim) bLim.innerText = `${nLim} instances`;
 
         renderSpotlightArena();
         renderCategoryInstances();
@@ -536,10 +692,12 @@ def get_dashboard_html() -> str:
       selectedCaseIndex = index;
       for (let i = 0; i < 4; i++) {
         const btn = document.getElementById(`case-btn-${i}`);
-        if (i === index) {
-          btn.classList.add('active-case');
-        } else {
-          btn.classList.remove('active-case');
+        if (btn) {
+          if (i === index) {
+            btn.classList.add('active-case');
+          } else {
+            btn.classList.remove('active-case');
+          }
         }
       }
       renderSpotlightArena();
@@ -547,6 +705,8 @@ def get_dashboard_html() -> str:
 
     function renderSpotlightArena() {
       const arena = document.getElementById('spotlight-display-arena');
+      if (!arena) return;
+
       if (!casesBreakdown || !casesBreakdown.featured_cases || casesBreakdown.featured_cases.length === 0) {
         arena.innerHTML = '<div class="p-8 text-center text-slate-500">No cases match the selected filter.</div>';
         return;
@@ -590,7 +750,7 @@ def get_dashboard_html() -> str:
           </div>
           <div class="text-xs text-slate-400 font-mono bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 flex items-center space-x-2">
             <span>Confidence:</span>
-            <span class="text-emerald-400 font-bold">${rel ? (rel.confidence * 100).toFixed(0) : (fa.confidence * 100).toFixed(0)}%</span>
+            <span class="text-emerald-400 font-bold">${rel ? (rel.confidence * 100).toFixed(0) : (fa && fa.confidence ? (fa.confidence * 100).toFixed(0) : 100)}%</span>
           </div>
         </div>
 
@@ -605,13 +765,13 @@ def get_dashboard_html() -> str:
                 <span>Source Filing A</span>
               </span>
               <span class="px-2.5 py-0.5 rounded-full bg-slate-900 text-slate-300 border border-slate-800 font-mono text-[11px]">
-                📄 ${fa.doc_filename} &bull; Page ${fa.page_number}
+                📄 ${fa ? fa.doc_filename : 'Document A'} &bull; Page ${fa ? fa.page_number : 'N/A'}
               </span>
             </div>
 
             <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800/80">
               <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Stated Claim:</span>
-              <p class="text-sm font-semibold text-white leading-snug">${fa.claim}</p>
+              <p class="text-sm font-semibold text-white leading-snug">${fa ? fa.claim : 'No claim statement available.'}</p>
             </div>
 
             <div class="p-3.5 rounded-xl bg-slate-900/40 border border-slate-800/60 text-xs">
@@ -619,7 +779,7 @@ def get_dashboard_html() -> str:
                 <span>💬</span> <span>Verbatim Source Quote:</span>
               </span>
               <p class="text-slate-300 italic leading-relaxed text-xs pl-2 border-l-2 border-blue-500/60">
-                "${fa.source_quote}"
+                "${fa ? fa.source_quote : ''}"
               </p>
             </div>
           </div>
@@ -685,10 +845,12 @@ def get_dashboard_html() -> str:
       currentCategoryView = category;
       ['corroborations', 'contradictions', 'reconciliations', 'limitations'].forEach(c => {
         const btn = document.getElementById(`cat-btn-${c}`);
-        if (c === category) {
-          btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white shadow-sm transition';
-        } else {
-          btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 hover:text-white border border-slate-700 transition';
+        if (btn) {
+          if (c === category) {
+            btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white shadow-sm transition';
+          } else {
+            btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 hover:text-white border border-slate-700 transition';
+          }
         }
       });
 
@@ -698,13 +860,14 @@ def get_dashboard_html() -> str:
         'reconciliations': 'All Discovered Contextual Reconciliations',
         'limitations': 'Identified Extraction Limitations & Edge Cases'
       };
-      document.getElementById('category-drawer-title').innerText = titleMap[category];
+      const titleEl = document.getElementById('category-drawer-title');
+      if (titleEl) titleEl.innerText = titleMap[category];
       renderCategoryInstances();
     }
 
     function renderCategoryInstances() {
       const container = document.getElementById('category-instances-container');
-      if (!casesBreakdown) return;
+      if (!container || !casesBreakdown) return;
 
       if (currentCategoryView === 'limitations') {
         const items = casesBreakdown.limitations || [];
@@ -740,12 +903,12 @@ def get_dashboard_html() -> str:
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px]">
             <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800/70">
-              <span class="text-[10px] font-bold text-slate-400 block mb-0.5">Doc A (${item.fact_a.doc_filename}, Pg ${item.fact_a.page_number}):</span>
-              <span class="text-slate-200 font-medium">${item.fact_a.claim}</span>
+              <span class="text-[10px] font-bold text-slate-400 block mb-0.5">Doc A (${item.fact_a ? item.fact_a.doc_filename : 'A'}, Pg ${item.fact_a ? item.fact_a.page_number : ''}):</span>
+              <span class="text-slate-200 font-medium">${item.fact_a ? item.fact_a.claim : ''}</span>
             </div>
             <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800/70">
-              <span class="text-[10px] font-bold text-slate-400 block mb-0.5">Doc B (${item.fact_b.doc_filename}, Pg ${item.fact_b.page_number}):</span>
-              <span class="text-slate-200 font-medium">${item.fact_b.claim}</span>
+              <span class="text-[10px] font-bold text-slate-400 block mb-0.5">Doc B (${item.fact_b ? item.fact_b.doc_filename : 'B'}, Pg ${item.fact_b ? item.fact_b.page_number : ''}):</span>
+              <span class="text-slate-200 font-medium">${item.fact_b ? item.fact_b.claim : ''}</span>
             </div>
           </div>
           <div class="text-[11px] text-slate-400 border-t border-slate-800/80 pt-2"><strong class="text-slate-300">Reasoning:</strong> ${item.explanation}</div>
@@ -757,8 +920,12 @@ def get_dashboard_html() -> str:
       try {
         const res = await fetch('/api/facts');
         rawFacts = await res.json();
-        document.getElementById('count-facts').innerText = rawFacts.length;
-        document.getElementById('header-stats').innerText = `${rawDocuments.length} Docs &bull; ${rawFacts.length} Facts`;
+        const fCount = document.getElementById('count-facts');
+        if (fCount) fCount.innerText = rawFacts.length;
+        
+        const hStats = document.getElementById('header-stats');
+        if (hStats) hStats.innerText = `${rawDocuments.length} Docs • ${rawFacts.length} Facts • ${rawRelationships.length} Rels`;
+        
         filterFacts();
       } catch (e) {
         console.error('Failed to load facts', e);
@@ -766,8 +933,8 @@ def get_dashboard_html() -> str:
     }
 
     function filterFacts() {
-      const q = (document.getElementById('fact-search').value || '').toLowerCase();
-      const doc = document.getElementById('doc-filter').value;
+      const q = (document.getElementById('fact-search') ? document.getElementById('fact-search').value : '').toLowerCase();
+      const doc = document.getElementById('doc-filter') ? document.getElementById('doc-filter').value : 'all';
 
       const filtered = rawFacts.filter(f => {
         const matchesDoc = doc === 'all' || f.doc_filename === doc;
@@ -778,8 +945,16 @@ def get_dashboard_html() -> str:
         return matchesDoc && matchesQuery;
       });
 
-      document.getElementById('facts-counter-text').innerText = `Showing ${filtered.length} of ${rawFacts.length} verified facts`;
+      const counter = document.getElementById('facts-counter-text');
+      if (counter) counter.innerText = `Showing ${filtered.length} of ${rawFacts.length} verified facts`;
+      
       const container = document.getElementById('facts-container');
+      if (!container) return;
+
+      if (!filtered.length) {
+        container.innerHTML = '<div class="col-span-2 p-8 text-center text-slate-500 text-xs">No facts match your search criteria.</div>';
+        return;
+      }
 
       container.innerHTML = filtered.slice(0, 100).map(f => `
         <div class="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-4 shadow-md space-y-2.5 transition">
@@ -804,7 +979,12 @@ def get_dashboard_html() -> str:
       try {
         const res = await fetch('/api/relationships');
         rawRelationships = await res.json();
-        document.getElementById('count-rels').innerText = rawRelationships.length;
+        const rCount = document.getElementById('count-rels');
+        if (rCount) rCount.innerText = rawRelationships.length;
+        
+        const hStats = document.getElementById('header-stats');
+        if (hStats) hStats.innerText = `${rawDocuments.length} Docs • ${rawFacts.length} Facts • ${rawRelationships.length} Rels`;
+
         filterRelationships('all');
       } catch (e) {
         console.error('Failed to load relationships', e);
@@ -814,10 +994,12 @@ def get_dashboard_html() -> str:
     function filterRelationships(type) {
       ['all', 'corroboration', 'contradiction', 'contextual_reconciliation'].forEach(t => {
         const btn = document.getElementById(`filter-rel-${t}`);
-        if (t === type) {
-          btn.className = 'rel-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-sm transition';
-        } else {
-          btn.className = 'rel-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition';
+        if (btn) {
+          if (t === type) {
+            btn.className = 'rel-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-sm transition';
+          } else {
+            btn.className = 'rel-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition';
+          }
         }
       });
 
@@ -826,8 +1008,16 @@ def get_dashboard_html() -> str:
         return (r.relationship_type || '').toLowerCase().includes(type.toLowerCase());
       });
 
-      document.getElementById('rel-filter-count').innerText = `Showing ${filtered.length} of ${rawRelationships.length} relationships`;
+      const countEl = document.getElementById('rel-filter-count');
+      if (countEl) countEl.innerText = `Showing ${filtered.length} of ${rawRelationships.length} relationships`;
+      
       const container = document.getElementById('relationships-container');
+      if (!container) return;
+
+      if (!filtered.length) {
+        container.innerHTML = '<div class="p-8 text-center text-slate-500 text-xs">No relationships found under this category.</div>';
+        return;
+      }
 
       container.innerHTML = filtered.map(r => {
         const fa = r.fact_a;
@@ -870,11 +1060,17 @@ def get_dashboard_html() -> str:
       try {
         const res = await fetch('/api/export');
         const data = await res.json();
-        document.getElementById('stat-docs').innerText = data.summary.total_documents;
-        document.getElementById('stat-facts').innerText = data.summary.total_facts;
-        document.getElementById('stat-rels').innerText = data.summary.total_relationships;
-        document.getElementById('stat-contras').innerText = data.summary.contradictions;
-        document.getElementById('json-preview').innerText = JSON.stringify(data, null, 2);
+        const sDocs = document.getElementById('stat-docs');
+        if (sDocs) sDocs.innerText = data.summary.total_documents;
+        const sFacts = document.getElementById('stat-facts');
+        if (sFacts) sFacts.innerText = data.summary.total_facts;
+        const sRels = document.getElementById('stat-rels');
+        if (sRels) sRels.innerText = data.summary.total_relationships;
+        const sContras = document.getElementById('stat-contras');
+        if (sContras) sContras.innerText = data.summary.contradictions;
+        
+        const preview = document.getElementById('json-preview');
+        if (preview) preview.innerText = JSON.stringify(data, null, 2);
       } catch (e) {
         console.error('Failed to load export', e);
       }
@@ -899,17 +1095,19 @@ def get_dashboard_html() -> str:
       const list = document.getElementById('file-chips-list');
       const count = document.getElementById('selected-files-count');
       if (!selectedFiles.length) {
-        container.classList.add('hidden');
+        if (container) container.classList.add('hidden');
         return;
       }
-      container.classList.remove('hidden');
-      count.innerText = selectedFiles.length;
-      list.innerHTML = selectedFiles.map((f, i) => `
-        <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-blue-500/10 text-blue-300 border border-blue-500/20">
-          📄 ${f.name} (${(f.size / 1024).toFixed(0)} KB)
-          <button type="button" onclick="removeFile(${i})" class="ml-2 text-blue-400 hover:text-rose-400 font-bold">&times;</button>
-        </span>
-      `).join('');
+      if (container) container.classList.remove('hidden');
+      if (count) count.innerText = selectedFiles.length;
+      if (list) {
+        list.innerHTML = selectedFiles.map((f, i) => `
+          <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-blue-500/10 text-blue-300 border border-blue-500/20">
+            📄 ${f.name} (${(f.size / 1024).toFixed(0)} KB)
+            <button type="button" onclick="removeFile(${i})" class="ml-2 text-blue-400 hover:text-rose-400 font-bold">&times;</button>
+          </span>
+        `).join('');
+      }
     }
 
     function removeFile(index) {
@@ -919,7 +1117,8 @@ def get_dashboard_html() -> str:
 
     function clearSelectedFiles() {
       selectedFiles = [];
-      document.getElementById('pdf-file-input').value = '';
+      const input = document.getElementById('pdf-file-input');
+      if (input) input.value = '';
       renderSelectedFiles();
     }
 
@@ -942,14 +1141,16 @@ def get_dashboard_html() -> str:
       const statusText = document.getElementById('upload-status-text');
       const uploadBtn = document.getElementById('upload-btn');
 
-      statusDiv.classList.remove('hidden');
-      uploadBtn.disabled = true;
-      uploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      if (statusDiv) statusDiv.classList.remove('hidden');
+      if (uploadBtn) {
+        uploadBtn.disabled = true;
+        uploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
 
-      progressBar.style.width = '30%';
-      statusPct.innerText = '30%';
-      statusTitle.innerText = `Ingesting ${selectedFiles.length} PDF(s)...`;
-      statusText.innerText = 'Parsing text streams, extracting markdown tables, and calling LLM fact triples...';
+      if (progressBar) progressBar.style.width = '30%';
+      if (statusPct) statusPct.innerText = '30%';
+      if (statusTitle) statusTitle.innerText = `Ingesting ${selectedFiles.length} PDF(s)...`;
+      if (statusText) statusText.innerText = 'Parsing text streams, extracting markdown tables, and calling LLM fact triples...';
 
       try {
         const res = await fetch('/api/upload', {
@@ -960,27 +1161,31 @@ def get_dashboard_html() -> str:
         if (!res.ok) throw new Error(`Upload error: ${res.status}`);
         const data = await res.json();
 
-        progressBar.style.width = '100%';
-        statusPct.innerText = '100%';
-        statusTitle.innerText = 'Batch Processing & Reconciliation Complete!';
-        statusText.innerText = `Successfully ingested ${data.results.length} files. Refreshing facts and cases...`;
+        if (progressBar) progressBar.style.width = '100%';
+        if (statusPct) statusPct.innerText = '100%';
+        if (statusTitle) statusTitle.innerText = 'Batch Processing & Reconciliation Complete!';
+        if (statusText) statusText.innerText = `Successfully ingested ${data.results.length} files. Refreshing facts and cases...`;
 
         setTimeout(async () => {
           clearSelectedFiles();
           await init();
-          uploadBtn.disabled = false;
-          uploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-          statusDiv.classList.add('hidden');
+          if (uploadBtn) {
+            uploadBtn.disabled = false;
+            uploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          }
+          if (statusDiv) statusDiv.classList.add('hidden');
           switchTab('cases');
           alert('Documents successfully ingested! Cases and relationships have been updated.');
         }, 1200);
 
       } catch (err) {
-        progressBar.style.backgroundColor = '#ef4444';
-        statusTitle.innerText = 'Upload Error';
-        statusText.innerText = err.message;
-        uploadBtn.disabled = false;
-        uploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        if (progressBar) progressBar.style.backgroundColor = '#ef4444';
+        if (statusTitle) statusTitle.innerText = 'Upload Error';
+        if (statusText) statusText.innerText = err.message;
+        if (uploadBtn) {
+          uploadBtn.disabled = false;
+          uploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
       }
     }
 

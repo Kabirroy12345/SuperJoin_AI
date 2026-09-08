@@ -39,7 +39,7 @@ def read_root(request: Request):
     Root endpoint returning either the interactive Web Dashboard (for browsers)
     or JSON welcome message with available endpoints.
     """
-    accept = request.headers.get("accept", "")
+    accept = request.headers.get("accept", "").lower()
     if "text/html" in accept and "application/json" not in accept:
         return HTMLResponse(content=get_dashboard_html())
 
@@ -163,10 +163,11 @@ def get_relationships(type: Optional[str] = Query(None, description="Filter rela
         relationships = pipeline.rel_store.get_relationships(type=type.lower() if type else None)
         enriched_relationships = []
         if relationships:
+            fact_map = {f.id: f for f in pipeline.fact_store.get_facts()}
             for rel in relationships:
                 rel_dict = rel.model_dump()
-                fact_a = pipeline.fact_store.get_fact(rel.fact_a_id)
-                fact_b = pipeline.fact_store.get_fact(rel.fact_b_id)
+                fact_a = fact_map.get(rel.fact_a_id)
+                fact_b = fact_map.get(rel.fact_b_id)
 
                 rel_dict["fact_a"] = fact_a.model_dump() if fact_a else None
                 rel_dict["fact_b"] = fact_b.model_dump() if fact_b else None

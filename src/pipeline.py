@@ -473,11 +473,12 @@ class Pipeline:
         Optionally filtered by doc_id (ID or filename).
         """
         all_rels = self.rel_store.get_all()
+        fact_map = {f.id: f for f in self.fact_store.get_facts()}
         if doc_id:
             active_rels = []
             for r in all_rels:
-                fa = self.fact_store.get_fact(r.fact_a_id)
-                fb = self.fact_store.get_fact(r.fact_b_id)
+                fa = fact_map.get(r.fact_a_id)
+                fb = fact_map.get(r.fact_b_id)
                 if fa and fb and (fa.doc_id == doc_id or fb.doc_id == doc_id or fa.doc_filename == doc_id or fb.doc_filename == doc_id):
                     active_rels.append(r)
         else:
@@ -488,8 +489,8 @@ class Pipeline:
         reconciliations = []
 
         for r in active_rels:
-            fa = self.fact_store.get_fact(r.fact_a_id)
-            fb = self.fact_store.get_fact(r.fact_b_id)
+            fa = fact_map.get(r.fact_a_id)
+            fb = fact_map.get(r.fact_b_id)
             if not fa or not fb:
                 continue
             score = self._score_candidate_pair(r, fa, fb)

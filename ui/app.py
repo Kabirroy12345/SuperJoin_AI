@@ -32,7 +32,7 @@ def get_local_pipeline():
 def fetch_data(endpoint: str) -> Any:
     # 1. Try REST API
     try:
-        response = requests.get(f"{API_BASE_URL}{endpoint}", timeout=1.5)
+        response = requests.get(f"{API_BASE_URL}{endpoint}", timeout=10.0)
         if response.status_code == 200:
             return response.json()
     except Exception:
@@ -49,11 +49,12 @@ def fetch_data(endpoint: str) -> Any:
             return [f.model_dump() for f in facts]
         elif endpoint.startswith("/relationships"):
             rels = p.rel_store.get_all()
+            fact_map = {f.id: f for f in p.fact_store.get_facts()}
             enriched = []
             for r in rels:
                 rd = r.model_dump()
-                fa = p.fact_store.get_fact(r.fact_a_id)
-                fb = p.fact_store.get_fact(r.fact_b_id)
+                fa = fact_map.get(r.fact_a_id)
+                fb = fact_map.get(r.fact_b_id)
                 rd["fact_a"] = fa.model_dump() if fa else None
                 rd["fact_b"] = fb.model_dump() if fb else None
                 enriched.append(rd)
