@@ -64,8 +64,9 @@ This repository implements a **purely domain-agnostic Fact Knowledge Layer**. Te
 
 > [!IMPORTANT]
 > ### 📺 3-Minute Video Walkthrough
-> **Direct Video Link**: `https://youtu.be/YOUR_DEMO_VIDEO_LINK_HERE`  
-> *(Unlisted YouTube / Loom recording of the live PDF ingestion, slide-over fact inspection drawer, and all 4 analytical scenarios)*.
+> **Watch Online**: [**Google Drive Video Stream**](https://drive.google.com/file/d/1o31YDEgupUA_0xn1xFSju4z6zod62s97/view?usp=sharing)  
+> **Direct Download**: [**Download MP4 Video**](https://drive.google.com/uc?id=1o31YDEgupUA_0xn1xFSju4z6zod62s97&export=download)  
+> *(Demonstrating live PDF ingestion, slide-over fact inspection drawer, and all 4 required analytical scenarios)*.
 
 ---
 
