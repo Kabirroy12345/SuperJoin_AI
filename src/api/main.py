@@ -11,7 +11,8 @@ from src.api.dashboard_html import get_dashboard_html
 from src.pipeline import Pipeline
 
 # Initialize the pipeline singleton
-pipeline = Pipeline(db_path='knowledge.db')
+db_path = os.getenv("DB_PATH", "knowledge.db")
+pipeline = Pipeline(db_path=db_path)
 
 app = FastAPI(
     title="Superjoin Fact Knowledge Layer API",

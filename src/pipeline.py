@@ -78,8 +78,12 @@ class Pipeline:
         caps = len(re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', text))
         score += min(caps * 0.3, 6.0)
 
-        # Business / operational / governance indicator terms
-        indicators = ["revenue", "profit", "loss", "ebitda", "volume", "growth", "pincode", "network", "parcel", "shipment", "director", "officer", "registered", "total", "margin"]
+        # Domain-agnostic indicator terms (financial, operational, governance, economic)
+        indicators = [
+            "revenue", "profit", "loss", "ebitda", "volume", "growth",
+            "capacity", "investment", "director", "officer", "expenditure",
+            "total", "margin", "assets", "liabilities", "equity", "rate"
+        ]
         text_lower = text.lower()
         score += sum(1.5 for ind in indicators if ind in text_lower)
 
@@ -435,27 +439,61 @@ class Pipeline:
             # Score facts to identify an authentic extraction challenge
             def failure_candidate_score(f: Fact) -> float:
                 score = 0.0
-                score += (1.0 - f.confidence) * 10.0
-                if len(f.claim) < 40 or len(f.source_quote) < 40:
-                    score += 4.0
-                if "Person" not in f.entity_types and any(r in f.claim.lower() for r in ["officer", "secretary", "director", "manager", "auditor"]):
-                    score += 6.0
+                q = f.source_quote.strip()
+                # 1. Bare numbers or chart labels where visual context was detached
+                if len(q) <= 10 or q.isdigit() or bool(re.match(r'^[₹$\d\s,.]+$', q)):
+                    score += 25.0
+                elif len(q) < 30:
+                    score += 12.0
+                # 2. Lower confidence score
+                score += (1.0 - f.confidence) * 20.0
+                # 3. Missing attributes or generic subject
+                if f.subject in ["Reporting Entity", "Unknown", "Company"] or not f.attributes:
+                    score += 5.0
                 return score
 
             sorted_candidates = sorted(target_fact_pool, key=failure_candidate_score, reverse=True)
             target_fact = sorted_candidates[0]
+
+            q = target_fact.source_quote.strip()
+            if len(q) <= 10 or bool(re.match(r'^[₹$\d\s,.]+$', q)):
+                limitation_type = "Isolated Graphic/Chart Token Extraction"
+                detail = (
+                    f"The source quote is an isolated numeric token (\"{q}\") extracted from a presentation chart or graphic. "
+                    f"Because presentation slides encode data visually in bar/line charts without tabular text flow, "
+                    f"standard PDF text extraction captures the floating number but loses the Y-axis units, series legend, "
+                    f"and period labels. While the semantic claim (\"{target_fact.claim}\") was successfully synthesized "
+                    f"from contextual headers, the source grounding is minimally bounded."
+                )
+                mitigation = (
+                    "Integrating Multimodal Vision-Language Models (e.g. Gemini 2.0 Flash / GPT-4o) that process "
+                    "full rasterized page images directly, or specialized chart de-rendering models (like DePlot), "
+                    "allowing the system to read graphical axes, legends, and data bars in their 2D visual context."
+                )
+            elif target_fact.confidence < 0.90:
+                limitation_type = "Low Confidence Token Disambiguation"
+                detail = (
+                    f"Extraction confidence was reduced ({target_fact.confidence:.2f}) due to ambiguous "
+                    f"syntactic phrasing or dense multi-entity clauses in the source chunk."
+                )
+                mitigation = "Applying secondary LLM self-reflection passes with structured JSON schema enforcement."
+            else:
+                limitation_type = "Dense Table Layout Flattening"
+                detail = (
+                    f"Multi-column tabular data in '{target_fact.doc_filename}' (page {target_fact.page_number}) "
+                    f"resulted in flattened whitespace tokens during plain-text extraction."
+                )
+                mitigation = "Using table-aware bounding box segmentation (pdfplumber table heuristics or LayoutLM)."
 
             cases.append(CaseExample(
                 case_number=4,
                 case_label="Extraction Failure / Limitation",
                 fact_a=target_fact,
                 explanation=(
-                    f"Extraction limitation in visual PDF document layout (Confidence: {target_fact.confidence:.2f}). "
-                    f"The source document ('{target_fact.doc_filename}', page {target_fact.page_number}) contains "
-                    f"a multi-column header or presentation slide where spatial bounding boxes were discarded by raw text streams. "
-                    f"Consequently, the extractor captured '{target_fact.claim[:80]}' with incomplete role-holder association. "
-                    f"Mitigation & Improvement: Integrating LayoutLMv3 spatial token modeling or multimodal Vision-Language Models "
-                    f"(Gemini Flash with rasterized page images) preserves 2D coordinates and accurately anchors un-nested titles to their entities."
+                    f"Authentic Extraction Challenge: {limitation_type} in '{target_fact.doc_filename}' "
+                    f"(Page {target_fact.page_number}, Confidence: {target_fact.confidence:.2f}). "
+                    f"{detail} "
+                    f"Mitigation & Improvement: {mitigation}"
                 ),
             ))
 
@@ -524,22 +562,38 @@ class Pipeline:
             fact_pool = all_facts
 
         def failure_score(f: Fact) -> float:
-            score = (1.0 - f.confidence) * 10.0
-            if len(f.claim) < 40 or len(f.source_quote) < 40:
-                score += 4.0
-            if "Person" not in f.entity_types and any(r in f.claim.lower() for r in ["officer", "secretary", "director", "manager", "auditor"]):
-                score += 6.0
+            score = 0.0
+            q = f.source_quote.strip()
+            if len(q) <= 10 or q.isdigit() or bool(re.match(r'^[₹$\d\s,.]+$', q)):
+                score += 25.0
+            elif len(q) < 30:
+                score += 12.0
+            score += (1.0 - f.confidence) * 20.0
+            if f.subject in ["Reporting Entity", "Unknown", "Company"] or not f.attributes:
+                score += 5.0
             return score
 
         sorted_facts = sorted(fact_pool, key=failure_score, reverse=True)
         limitations = []
         for f in sorted_facts[:10]:
             f_score = failure_score(f)
-            analysis = (
-                f"Layout limitation in '{f.doc_filename}', page {f.page_number} (Confidence: {f.confidence:.2f}). "
-                f"Multi-column flow or tabular text stream flattened spatial tokens, causing potential ambiguity in '{f.claim[:70]}...'. "
-                f"Mitigation: 2D Spatial OCR (LayoutLMv3) or Multimodal Visual VLM."
-            )
+            q = f.source_quote.strip()
+            if len(q) <= 10 or bool(re.match(r'^[₹$\d\s,.]+$', q)):
+                analysis = (
+                    f"Graphic/chart label token in '{f.doc_filename}', page {f.page_number}. "
+                    f"Numeric value '{q}' extracted from visual bar/line chart without axis coordinates. "
+                    f"Mitigation: Vision-Language Model or chart-de-rendering model."
+                )
+            elif f.confidence < 0.90:
+                analysis = (
+                    f"Semantic confidence threshold limitation ({f.confidence:.2f}) in '{f.doc_filename}', page {f.page_number}. "
+                    f"Mitigation: Multi-turn self-reflective parsing."
+                )
+            else:
+                analysis = (
+                    f"Dense table/clause layout in '{f.doc_filename}', page {f.page_number}. "
+                    f"Mitigation: Spatial bounding box token alignment (LayoutLM)."
+                )
             limitations.append({
                 "fact": f.model_dump(),
                 "confidence": f.confidence,

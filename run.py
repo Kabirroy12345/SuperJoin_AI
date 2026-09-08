@@ -74,6 +74,10 @@ def main() -> None:
         help="Path to SQLite database (default: knowledge.db)",
     )
     parser.add_argument(
+        "--no-browser", action="store_true",
+        help="Do not automatically open browser on --serve",
+    )
+    parser.add_argument(
         "-v", "--verbose", action="store_true",
         help="Enable verbose logging",
     )
@@ -161,15 +165,19 @@ def main() -> None:
     # --- Start API & Dashboard server ---
     if args.serve:
         import uvicorn
-        import webbrowser
-        import threading
+        import os
+        os.environ["DB_PATH"] = args.db
         print("\n" + "="*60)
         print("FACT KNOWLEDGE LAYER — WEB DASHBOARD & API")
         print("="*60)
+        print(f"  📁 Database:              {args.db}")
         print("  🌐 Interactive Dashboard: http://localhost:8000/dashboard")
         print("  📖 Swagger API Docs:      http://localhost:8000/docs")
         print("="*60 + "\n")
-        threading.Timer(1.5, lambda: webbrowser.open("http://localhost:8000/dashboard")).start()
+        if not args.no_browser:
+            import webbrowser
+            import threading
+            threading.Timer(1.5, lambda: webbrowser.open("http://localhost:8000/dashboard")).start()
         uvicorn.run("src.api.main:app", host="127.0.0.1", port=8000, reload=False)
 
 
