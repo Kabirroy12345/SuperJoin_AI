@@ -515,10 +515,15 @@ def get_dashboard_html() -> str:
         casesBreakdown = await res.json();
 
         const counts = casesBreakdown.counts || {};
-        document.getElementById('badge-corrobs-count').innerText = `${counts.corroborations || 0} instances`;
-        document.getElementById('badge-contras-count').innerText = `${counts.contradictions || 0} instances`;
-        document.getElementById('badge-recs-count').innerText = `${counts.reconciliations || 0} instances`;
-        document.getElementById('badge-limits-count').innerText = `${counts.limitations || 0} instances`;
+        const nCorrob = counts.corroborations ?? (casesBreakdown.corroborations ? casesBreakdown.corroborations.length : 0);
+        const nContra = counts.contradictions ?? (casesBreakdown.contradictions ? casesBreakdown.contradictions.length : 0);
+        const nRec = counts.reconciliations ?? (casesBreakdown.reconciliations ? casesBreakdown.reconciliations.length : 0);
+        const nLim = counts.limitations ?? (casesBreakdown.limitations ? casesBreakdown.limitations.length : 0);
+
+        document.getElementById('badge-corrobs-count').innerText = `${nCorrob} instances`;
+        document.getElementById('badge-contras-count').innerText = `${nContra} instances`;
+        document.getElementById('badge-recs-count').innerText = `${nRec} instances`;
+        document.getElementById('badge-limits-count').innerText = `${nLim} instances`;
 
         renderSpotlightArena();
         renderCategoryInstances();
