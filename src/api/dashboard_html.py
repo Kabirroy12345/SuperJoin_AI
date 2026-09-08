@@ -36,8 +36,8 @@ def get_dashboard_html() -> str:
         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
           <span class="w-2 h-2 mr-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Engine Ready
         </span>
-        <button onclick="confirmReset()" class="px-3 py-1.5 text-xs font-semibold text-rose-700 hover:text-white hover:bg-rose-600 border border-rose-200 rounded-lg transition flex items-center space-x-1">
-          <span>🗑️</span> <span>Reset DB</span>
+        <button onclick="confirmReset()" class="px-3 py-1.5 text-xs font-semibold text-blue-700 hover:text-white hover:bg-blue-600 border border-blue-200 rounded-lg transition flex items-center space-x-1">
+          <span>🔄</span> <span>Reset to Benchmark</span>
         </button>
         <a href="/docs" target="_blank" class="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-blue-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
           API Specs &rarr;
@@ -787,16 +787,16 @@ def get_dashboard_html() -> str:
 
     async function confirmReset() {
       const confirmAction = confirm(
-        "⚠️ RESET DATABASE CONFIRMATION\\n\\n" +
-        "Are you sure you want to completely clear all documents, facts, and relationships?\\n" +
-        "This is recommended when testing fresh document sets."
+        "🔄 RESET TO BENCHMARK BASELINE\\n\\n" +
+        "This will restore the 3 benchmark Delhivery filings, 258 verified facts, and 47 relationships.\\n\\n" +
+        "Click OK to restore benchmark baseline, or Cancel to keep current state."
       );
       if (!confirmAction) return;
 
       try {
         const res = await fetch('/api/reset', { method: 'POST' });
         const data = await res.json();
-        alert('Database cleared successfully! You can now upload new documents.');
+        alert('Benchmark baseline successfully restored! (3 Delhivery PDFs, 258 facts, 47 relationships)');
         window.location.reload();
       } catch (e) {
         alert('Error resetting database: ' + e.message);

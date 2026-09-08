@@ -266,9 +266,13 @@ def test_pipeline_cases_and_export(temp_db):
     assert export_data["summary"]["total_facts"] == 2
     assert export_data["summary"]["total_relationships"] == 1
 
-    # Test reset database
-    reset_res = pipeline.reset_database()
+    # Test reset database (wipe mode)
+    reset_res = pipeline.reset_database(restore_benchmark=False)
     assert reset_res["status"] == "cleared"
     assert len(pipeline.doc_store.get_all_documents()) == 0
     assert len(pipeline.fact_store.get_facts()) == 0
     assert len(pipeline.rel_store.get_all()) == 0
+
+    # Test reset database (benchmark restore mode)
+    restore_res = pipeline.reset_database(restore_benchmark=True)
+    assert restore_res["status"] == "restored"

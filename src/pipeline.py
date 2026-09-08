@@ -13,6 +13,7 @@ import re
 import logging
 import json
 import sqlite3
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -562,11 +563,32 @@ class Pipeline:
             }
         }
 
-    def reset_database(self) -> dict[str, Any]:
+    def reset_database(self, restore_benchmark: bool = True) -> dict[str, Any]:
         """
-        Wipes all documents, chunks, facts, and relationships from the database.
-        Allows users to start completely fresh with new PDFs without leftover state.
+        Resets the database. By default, restores the 3 benchmark Delhivery documents,
+        258 facts, and 47 relationships so the showcase is always populated and ready.
+        If restore_benchmark is False, wipes all tables for a blank slate.
         """
+        if restore_benchmark:
+            backup_path = Path("benchmark_backup.db")
+            if backup_path.exists():
+                shutil.copy(str(backup_path), self.db_path)
+                logger.info("Database reset: restored to benchmark Delhivery baseline from snapshot.")
+                return {
+                    "status": "restored",
+                    "message": "Database reset to benchmark baseline: all 3 Delhivery documents, 258 facts, and 47 relationships restored."
+                }
+            else:
+                try:
+                    from src.seed_benchmark import seed_benchmark
+                    seed_benchmark(self.db_path)
+                    return {
+                        "status": "restored",
+                        "message": "Database seeded with benchmark Delhivery documents, facts, and relationships."
+                    }
+                except Exception as e:
+                    logger.warning(f"Failed to seed benchmark: {e}")
+
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute("DELETE FROM fact_relationships")

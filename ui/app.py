@@ -92,12 +92,12 @@ page = st.sidebar.radio(
 
 st.sidebar.divider()
 st.sidebar.subheader("System Maintenance")
-if st.sidebar.button("🗑️ Reset Database", type="secondary", help="Clear all stored documents, facts, and relationships"):
+if st.sidebar.button("🔄 Reset to Benchmark (Delhivery)", type="secondary", help="Restores the 3 benchmark Delhivery filings, 258 facts, and 47 relationships"):
     try:
         requests.post(f"{API_BASE_URL}/reset", timeout=5)
     except Exception:
         get_local_pipeline().reset_database()
-    st.sidebar.success("Database cleared successfully!")
+    st.sidebar.success("Benchmark baseline restored successfully!")
     st.rerun()
 
 if page == "📤 Upload Documents":

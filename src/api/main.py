@@ -206,13 +206,14 @@ def get_cases_breakdown(doc_id: Optional[str] = Query(None, description="Filter 
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/reset")
-def reset_database():
+def reset_database(blank: bool = Query(False, description="If True, clears database completely; if False, resets to benchmark baseline")):
     """
-    Reset and wipe all documents, chunks, facts, and relationships from the database.
-    Allows clean re-testing of any document sets.
+    Resets the database. By default, restores the 3 benchmark Delhivery filings, facts,
+    and relationships so the application always showcases verified ground truth.
+    Set blank=true to wipe completely for external testing.
     """
     try:
-        result = pipeline.reset_database()
+        result = pipeline.reset_database(restore_benchmark=not blank)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
