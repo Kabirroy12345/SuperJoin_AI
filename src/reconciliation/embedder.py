@@ -42,7 +42,7 @@ class FactEmbedder:
         Embeds a single string into a normalized dense vector.
         """
         if not text:
-            return [0.0] * (384 if not self.api_key else 3072)
+            return [0.0] * self.dim
 
         if text in self._cache:
             return self._cache[text]
@@ -77,7 +77,7 @@ class FactEmbedder:
         try:
             data = json.dumps(payload).encode("utf-8")
             req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            with urllib.request.urlopen(req, timeout=4) as resp:
                 result = json.loads(resp.read().decode("utf-8"))
                 values = result.get("embedding", {}).get("values")
                 if values:
@@ -106,7 +106,7 @@ class FactEmbedder:
         try:
             data = json.dumps(payload).encode("utf-8")
             req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=25) as resp:
+            with urllib.request.urlopen(req, timeout=12) as resp:
                 result = json.loads(resp.read().decode("utf-8"))
                 embeddings_data = result.get("embeddings", [])
                 out = []
@@ -125,35 +125,36 @@ class FactEmbedder:
             logger.warning(f"Gemini batch embed failed: {e}. Falling back to per-item/offline.")
             return None
 
-    def _numpy_hash_embed(self, text: str, dim: int = 384) -> List[float]:
+    def _numpy_hash_embed(self, text: str, dim: Optional[int] = None) -> List[float]:
         """
         Fast subword & character n-gram semantic hash projection in pure NumPy.
         Produces normalized vectors where similar phrasing yields high cosine similarity,
         and unrelated topics yield near-zero similarity.
         """
+        target_dim = dim or self.dim
         if not text:
-            return [0.0] * dim
+            return [0.0] * target_dim
 
         clean_text = text.lower().strip()
         tokens = re.findall(r'\b\w+\b', clean_text)
-        vec = np.zeros(dim, dtype=np.float32)
+        vec = np.zeros(target_dim, dtype=np.float32)
 
         for tok in tokens:
-            h1 = hash(tok) % dim
-            h2 = hash(tok + "_alt") % dim
+            h1 = hash(tok) % target_dim
+            h2 = hash(tok + "_alt") % target_dim
             vec[h1] += 1.0
             vec[h2] += 0.5
 
         if len(clean_text) >= 3:
             for i in range(len(clean_text) - 2):
                 ng = clean_text[i:i+3]
-                h = hash(ng) % dim
+                h = hash(ng) % target_dim
                 vec[h] += 0.35
 
         if len(clean_text) >= 4:
             for i in range(len(clean_text) - 3):
                 ng = clean_text[i:i+4]
-                h = hash(ng) % dim
+                h = hash(ng) % target_dim
                 vec[h] += 0.25
 
         norm = float(np.linalg.norm(vec))
@@ -181,8 +182,9 @@ class FactEmbedder:
                     for f, emb in zip(batch, batch_embs):
                         self._cache[f.claim] = emb
                 else:
+                    # On rate limit (429) or batch failure, immediately fall back to high-speed numpy projection
                     for f in batch:
-                        self.embed_text(f.claim)
+                        self._cache[f.claim] = self._numpy_hash_embed(f.claim)
 
         for fact in facts:
             if fact.embedding is None:
