@@ -809,9 +809,18 @@ def get_dashboard_html() -> str:
       populateScopeFilters();
       renderCasesView();
       renderDocumentsView();
-      renderFacts();
+      filterFacts();
       renderRelationships('all');
       loadExportPreview();
+    }
+
+    // Direct function aliases ensuring all click handlers and calls resolve seamlessly
+    function renderFacts() {
+      filterFacts();
+    }
+
+    function filterRelationships(filterType) {
+      renderRelationships(filterType);
     }
 
     function populateScopeFilters() {
@@ -870,6 +879,13 @@ def get_dashboard_html() -> str:
           }
         }
       });
+
+      // Automatically populate / refresh view on tab activation
+      if (tabId === 'cases') renderCasesView();
+      if (tabId === 'documents') renderDocumentsView();
+      if (tabId === 'facts') filterFacts();
+      if (tabId === 'relationships') renderRelationships('all');
+      if (tabId === 'export') loadExportPreview();
     }
 
     async function onCaseDocFilterChange() {
@@ -1285,10 +1301,21 @@ def get_dashboard_html() -> str:
       if (!preview) return;
       try {
         const res = await fetch('/api/export');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        preview.innerText = JSON.stringify(data, null, 2).substring(0, 4000) + '\n\n... [TRUNCATED FOR PREVIEW]';
+        const header = `// ------------------------------------------------------------\n` +
+          `// SUPERJOIN KNOWLEDGE GRAPH EXPORT SUMMARY\n` +
+          `// Total Ingested Documents:     ${data.summary ? data.summary.total_documents : (data.documents || []).length}\n` +
+          `// Total Extracted Atomic Facts: ${data.summary ? data.summary.total_facts : (data.facts || []).length}\n` +
+          `// Cross-Filing Audited Pairs:   ${data.summary ? data.summary.total_relationships : (data.relationships || []).length}\n` +
+          `//   • Corroborations:           ${data.summary ? data.summary.corroborations : 'N/A'}\n` +
+          `//   • Contradictions:           ${data.summary ? data.summary.contradictions : 'N/A'}\n` +
+          `//   • Reconciliations:          ${data.summary ? data.summary.contextual_reconciliations : 'N/A'}\n` +
+          `// ------------------------------------------------------------\n\n`;
+        preview.innerText = header + JSON.stringify(data, null, 2).substring(0, 4500) + '\n\n... [TRUNCATED FOR TERMINAL PREVIEW — CLICK "DOWNLOAD JSON-LD EXPORT" ABOVE FOR COMPLETE 275KB GRAPH]';
       } catch (e) {
-        preview.innerText = 'Failed to load export preview.';
+        console.error('Error loading export preview:', e);
+        preview.innerText = 'Failed to load export preview: ' + e.message;
       }
     }
 
