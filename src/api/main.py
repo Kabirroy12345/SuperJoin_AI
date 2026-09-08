@@ -53,7 +53,9 @@ def read_root(request: Request):
             "GET /api/facts - List facts (optional ?doc_id=)",
             "GET /api/facts/{fact_id} - Get a specific fact",
             "GET /api/relationships - List relationships (optional ?type=)",
-            "GET /api/cases - Get required analytical cases",
+            "GET /api/cases - Get required analytical cases (optional ?doc_id=)",
+            "GET /api/cases/breakdown - Get comprehensive 4-case categorized breakdown (optional ?doc_id=)",
+            "POST /api/reset - Clear/reset all database records",
             "GET /api/export - Export full results"
         ]
     }
@@ -175,13 +177,43 @@ def get_relationships(type: Optional[str] = Query(None, description="Filter rela
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/cases")
-def get_cases():
+def get_cases(doc_id: Optional[str] = Query(None, description="Filter cases by document ID or filename")):
     """
     Return the required analytical cases from the knowledge base.
+    Optionally filtered by document.
     """
     try:
-        cases = pipeline.get_cases()
+        cases = pipeline.get_cases(doc_id=doc_id)
         return [case.model_dump() for case in cases] if cases else []
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/cases/breakdown")
+def get_cases_breakdown(doc_id: Optional[str] = Query(None, description="Filter cases breakdown by document ID or filename")):
+    """
+    Return comprehensive categorized breakdown of all discovered cases:
+    - All Corroborations
+    - All Contradictions
+    - All Contextual Reconciliations
+    - Identified Extraction Limitations
+    - Featured Spotlight Cases
+    Optionally filtered by document.
+    """
+    try:
+        breakdown = pipeline.get_cases_breakdown(doc_id=doc_id)
+        return breakdown
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/reset")
+def reset_database():
+    """
+    Reset and wipe all documents, chunks, facts, and relationships from the database.
+    Allows clean re-testing of any document sets.
+    """
+    try:
+        result = pipeline.reset_database()
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

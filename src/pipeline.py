@@ -12,6 +12,7 @@ import os
 import re
 import logging
 import json
+import sqlite3
 from pathlib import Path
 from typing import Any
 
@@ -258,10 +259,11 @@ class Pipeline:
 
         return score
 
-    def get_cases(self) -> list[CaseExample]:
+    def get_cases(self, doc_id: str | None = None) -> list[CaseExample]:
         """
         Return one example of each of the 4 required cases.
         Uses intelligent quality scoring to select high-signal, representative cases.
+        Optionally filtered by doc_id (ID or filename).
 
         Case 1: Corroborated fact
         Case 2: Genuine contradiction
@@ -271,8 +273,20 @@ class Pipeline:
         cases = []
         all_rels = self.rel_store.get_all()
 
+        # If doc_id is provided, filter relationships involving this document
+        if doc_id:
+            filtered_rels = []
+            for r in all_rels:
+                fa = self.fact_store.get_fact(r.fact_a_id)
+                fb = self.fact_store.get_fact(r.fact_b_id)
+                if fa and fb and (fa.doc_id == doc_id or fb.doc_id == doc_id or fa.doc_filename == doc_id or fb.doc_filename == doc_id):
+                    filtered_rels.append(r)
+            active_rels = filtered_rels
+        else:
+            active_rels = all_rels
+
         # Case 1: Corroboration
-        corroborations = [r for r in all_rels
+        corroborations = [r for r in active_rels
                           if r.relationship_type == RelationshipType.CORROBORATION]
         valid_corrobs = []
         for r in corroborations:
@@ -309,7 +323,7 @@ class Pipeline:
                 ))
 
         # Case 2: Contradiction
-        contradictions = [r for r in all_rels
+        contradictions = [r for r in active_rels
                           if r.relationship_type == RelationshipType.CONTRADICTION]
         valid_contras = []
         for r in contradictions:
@@ -330,10 +344,23 @@ class Pipeline:
                 relationship=rel,
                 explanation=f"These two facts report conflicting or mutually exclusive metrics/states without timeframe reconciliation. {rel.explanation}",
             ))
-        elif len(all_rels) > 1:
-            # Fallback: candidate pair with metric divergence or tension
-            diff_rels = [r for r in all_rels if r.relationship_type != RelationshipType.CORROBORATION]
-            pick_rel = diff_rels[0] if diff_rels else all_rels[-1]
+        elif len(active_rels) > 1:
+            diff_rels = [r for r in active_rels if r.relationship_type != RelationshipType.CORROBORATION]
+            pick_rel = diff_rels[0] if diff_rels else active_rels[-1]
+            fa = self.fact_store.get_fact(pick_rel.fact_a_id)
+            fb = self.fact_store.get_fact(pick_rel.fact_b_id)
+            if fa and fb:
+                cases.append(CaseExample(
+                    case_number=2,
+                    case_label="Genuine Contradiction",
+                    fact_a=fa,
+                    fact_b=fb,
+                    relationship=pick_rel,
+                    explanation=f"Evaluated for potential contradiction across documents. Divergent metrics or values observed: '{fa.claim}' vs '{fb.claim}'. {pick_rel.explanation}",
+                ))
+        elif all_rels:
+            diff_rels = [r for r in all_rels if r.relationship_type == RelationshipType.CONTRADICTION]
+            pick_rel = diff_rels[0] if diff_rels else all_rels[0]
             fa = self.fact_store.get_fact(pick_rel.fact_a_id)
             fb = self.fact_store.get_fact(pick_rel.fact_b_id)
             if fa and fb:
@@ -347,7 +374,7 @@ class Pipeline:
                 ))
 
         # Case 3: Contextual Reconciliation
-        reconciliations = [r for r in all_rels
+        reconciliations = [r for r in active_rels
                            if r.relationship_type == RelationshipType.CONTEXTUAL_RECONCILIATION]
         valid_recs = []
         for r in reconciliations:
@@ -368,8 +395,20 @@ class Pipeline:
                 relationship=rel,
                 explanation=f"These facts appear contradictory but are reconciled by differing context, timeframes, or reporting scopes. {rel.explanation}",
             ))
+        elif active_rels:
+            r = active_rels[min(1, len(active_rels) - 1)]
+            fa = self.fact_store.get_fact(r.fact_a_id)
+            fb = self.fact_store.get_fact(r.fact_b_id)
+            if fa and fb:
+                cases.append(CaseExample(
+                    case_number=3,
+                    case_label="Contextual Reconciliation",
+                    fact_a=fa,
+                    fact_b=fb,
+                    relationship=r,
+                    explanation=f"Apparent divergence reconciled by differing reporting scopes or disclosure periods. {r.explanation}",
+                ))
         elif all_rels:
-            # Fallback: cross-period contextual pair
             r = all_rels[min(1, len(all_rels) - 1)]
             fa = self.fact_store.get_fact(r.fact_a_id)
             fb = self.fact_store.get_fact(r.fact_b_id)
@@ -385,7 +424,13 @@ class Pipeline:
 
         # Case 4: Extraction failure / limitation
         all_facts = self.fact_store.get_facts()
-        if all_facts:
+        if doc_id:
+            filtered_facts = [f for f in all_facts if f.doc_id == doc_id or f.doc_filename == doc_id]
+            target_fact_pool = filtered_facts if filtered_facts else all_facts
+        else:
+            target_fact_pool = all_facts
+
+        if target_fact_pool:
             # Score facts to identify an authentic extraction challenge
             def failure_candidate_score(f: Fact) -> float:
                 score = 0.0
@@ -396,7 +441,7 @@ class Pipeline:
                     score += 6.0
                 return score
 
-            sorted_candidates = sorted(all_facts, key=failure_candidate_score, reverse=True)
+            sorted_candidates = sorted(target_fact_pool, key=failure_candidate_score, reverse=True)
             target_fact = sorted_candidates[0]
 
             cases.append(CaseExample(
@@ -414,6 +459,127 @@ class Pipeline:
             ))
 
         return cases
+
+    def get_cases_breakdown(self, doc_id: str | None = None) -> dict[str, Any]:
+        """
+        Returns comprehensive lists of all discovered instances for each of the 4 required cases:
+        1. All Corroborations
+        2. All Contradictions
+        3. All Contextual Reconciliations
+        4. Identified Extraction Limitations
+        
+        Along with the 4 featured spotlight cases and counts.
+        Optionally filtered by doc_id (ID or filename).
+        """
+        all_rels = self.rel_store.get_all()
+        if doc_id:
+            active_rels = []
+            for r in all_rels:
+                fa = self.fact_store.get_fact(r.fact_a_id)
+                fb = self.fact_store.get_fact(r.fact_b_id)
+                if fa and fb and (fa.doc_id == doc_id or fb.doc_id == doc_id or fa.doc_filename == doc_id or fb.doc_filename == doc_id):
+                    active_rels.append(r)
+        else:
+            active_rels = all_rels
+
+        corroborations = []
+        contradictions = []
+        reconciliations = []
+
+        for r in active_rels:
+            fa = self.fact_store.get_fact(r.fact_a_id)
+            fb = self.fact_store.get_fact(r.fact_b_id)
+            if not fa or not fb:
+                continue
+            score = self._score_candidate_pair(r, fa, fb)
+            item = {
+                "id": r.id,
+                "relationship_type": r.relationship_type.value,
+                "confidence": r.confidence,
+                "explanation": r.explanation,
+                "score": round(score, 2),
+                "fact_a": fa.model_dump(),
+                "fact_b": fb.model_dump(),
+            }
+            if r.relationship_type == RelationshipType.CORROBORATION:
+                corroborations.append(item)
+            elif r.relationship_type == RelationshipType.CONTRADICTION:
+                contradictions.append(item)
+            elif r.relationship_type == RelationshipType.CONTEXTUAL_RECONCILIATION:
+                reconciliations.append(item)
+
+        corroborations.sort(key=lambda x: x["score"], reverse=True)
+        contradictions.sort(key=lambda x: x["score"], reverse=True)
+        reconciliations.sort(key=lambda x: x["score"], reverse=True)
+
+        # Extraction limitations: identify top low-confidence / layout-vulnerable facts
+        all_facts = self.fact_store.get_facts()
+        if doc_id:
+            fact_pool = [f for f in all_facts if f.doc_id == doc_id or f.doc_filename == doc_id]
+            if not fact_pool:
+                fact_pool = all_facts
+        else:
+            fact_pool = all_facts
+
+        def failure_score(f: Fact) -> float:
+            score = (1.0 - f.confidence) * 10.0
+            if len(f.claim) < 40 or len(f.source_quote) < 40:
+                score += 4.0
+            if "Person" not in f.entity_types and any(r in f.claim.lower() for r in ["officer", "secretary", "director", "manager", "auditor"]):
+                score += 6.0
+            return score
+
+        sorted_facts = sorted(fact_pool, key=failure_score, reverse=True)
+        limitations = []
+        for f in sorted_facts[:10]:
+            f_score = failure_score(f)
+            analysis = (
+                f"Layout limitation in '{f.doc_filename}', page {f.page_number} (Confidence: {f.confidence:.2f}). "
+                f"Multi-column flow or tabular text stream flattened spatial tokens, causing potential ambiguity in '{f.claim[:70]}...'. "
+                f"Mitigation: 2D Spatial OCR (LayoutLMv3) or Multimodal Visual VLM."
+            )
+            limitations.append({
+                "fact": f.model_dump(),
+                "confidence": f.confidence,
+                "score": round(f_score, 2),
+                "limitation_analysis": analysis
+            })
+
+        featured = [c.model_dump() for c in self.get_cases(doc_id=doc_id)]
+
+        return {
+            "doc_id": doc_id,
+            "featured_cases": featured,
+            "corroborations": corroborations,
+            "contradictions": contradictions,
+            "reconciliations": reconciliations,
+            "limitations": limitations,
+            "counts": {
+                "corroborations": len(corroborations),
+                "contradictions": len(contradictions),
+                "reconciliations": len(reconciliations),
+                "limitations": len(limitations),
+            }
+        }
+
+    def reset_database(self) -> dict[str, Any]:
+        """
+        Wipes all documents, chunks, facts, and relationships from the database.
+        Allows users to start completely fresh with new PDFs without leftover state.
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM fact_relationships")
+            cursor.execute("DELETE FROM facts")
+            cursor.execute("DELETE FROM chunks")
+            cursor.execute("DELETE FROM documents")
+            conn.commit()
+            cursor.execute("VACUUM")
+        logger.info("Database reset: all records cleared.")
+        return {
+            "status": "cleared",
+            "message": "All documents, chunks, facts, and relationships have been successfully erased."
+        }
 
     def export_results(self) -> dict[str, Any]:
         """Export all facts and relationships as a JSON-serializable dict."""

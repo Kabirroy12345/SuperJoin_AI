@@ -58,8 +58,16 @@ def fetch_data(endpoint: str) -> Any:
                 rd["fact_b"] = fb.model_dump() if fb else None
                 enriched.append(rd)
             return enriched
-        elif endpoint == "/cases":
-            cases = p.get_cases()
+        elif endpoint.startswith("/cases/breakdown"):
+            doc_id = None
+            if "?doc_id=" in endpoint:
+                doc_id = endpoint.split("?doc_id=")[1]
+            return p.get_cases_breakdown(doc_id=doc_id)
+        elif endpoint.startswith("/cases"):
+            doc_id = None
+            if "?doc_id=" in endpoint:
+                doc_id = endpoint.split("?doc_id=")[1]
+            cases = p.get_cases(doc_id=doc_id)
             return [c.model_dump() for c in cases]
         elif endpoint == "/export":
             return p.export_results()
@@ -81,6 +89,16 @@ page = st.sidebar.radio(
     "Navigation",
     ["📤 Upload Documents", "📄 Documents", "🔍 Facts Explorer", "🔗 Relationships", "✅ Four Required Cases", "📊 Export & Stats"]
 )
+
+st.sidebar.divider()
+st.sidebar.subheader("System Maintenance")
+if st.sidebar.button("🗑️ Reset Database", type="secondary", help="Clear all stored documents, facts, and relationships"):
+    try:
+        requests.post(f"{API_BASE_URL}/reset", timeout=5)
+    except Exception:
+        get_local_pipeline().reset_database()
+    st.sidebar.success("Database cleared successfully!")
+    st.rerun()
 
 if page == "📤 Upload Documents":
     st.header("Upload Documents")
@@ -298,48 +316,154 @@ elif page == "✅ Four Required Cases":
     st.header("Four Required Analytical Cases")
     st.markdown("Demonstration of the four required scenarios specified in the Superjoin problem statement.")
 
-    cases = fetch_data("/cases")
+    docs = fetch_data("/documents") or []
+    doc_map = {d["id"]: d["filename"] for d in docs}
+    doc_options = ["All Documents (Global)"] + list(doc_map.values())
+    selected_doc_name = st.selectbox("Select Document Scope", doc_options)
 
-    if cases is not None:
-        if not cases:
-            st.info("No cases identified yet. Process documents to discover cross-document relationships.")
-        else:
-            for case in cases:
-                c_num = case.get("case_number", "")
-                c_label = case.get("case_label", case.get("case_type", "Case"))
-                st.subheader(f"Case {c_num}: {c_label}")
+    doc_filter_param = ""
+    if selected_doc_name != "All Documents (Global)":
+        doc_id_val = next((k for k, v in doc_map.items() if v == selected_doc_name), None)
+        if doc_id_val:
+            doc_filter_param = f"?doc_id={doc_id_val}"
 
-                if "Corroborat" in c_label:
-                    st.success(f"**Analysis**: {case.get('explanation', '')}")
-                elif "Contradiction" in c_label:
-                    st.error(f"**Analysis**: {case.get('explanation', '')}")
-                elif "Reconciliation" in c_label:
-                    st.warning(f"**Analysis**: {case.get('explanation', '')}")
-                else:
-                    st.info(f"**Analysis**: {case.get('explanation', '')}")
+    breakdown = fetch_data(f"/cases/breakdown{doc_filter_param}")
 
-                fact_a = case.get("fact_a")
-                fact_b = case.get("fact_b")
+    if breakdown:
+        featured = breakdown.get("featured_cases", [])
+        corrobs = breakdown.get("corroborations", [])
+        contras = breakdown.get("contradictions", [])
+        recs = breakdown.get("reconciliations", [])
+        limits = breakdown.get("limitations", [])
 
-                if fact_a and fact_b:
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        st.markdown("#### Evidence A")
+        # Display Top Metrics
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Corroborations", len(corrobs))
+        m2.metric("Contradictions", len(contras))
+        m3.metric("Reconciliations", len(recs))
+        m4.metric("Limitations", len(limits))
+
+        tab_spot, tab_corrob, tab_contra, tab_recon, tab_limit = st.tabs([
+            "🌟 4 Spotlight Cases",
+            f"All Corroborations ({len(corrobs)})",
+            f"All Contradictions ({len(contras)})",
+            f"All Reconciliations ({len(recs)})",
+            f"Extraction Limitations ({len(limits)})"
+        ])
+
+        with tab_spot:
+            if not featured:
+                st.info("No cases identified for this document selection.")
+            else:
+                for case in featured:
+                    c_num = case.get("case_number", "")
+                    c_label = case.get("case_label", case.get("case_type", "Case"))
+                    st.subheader(f"Case {c_num}: {c_label}")
+
+                    if "Corroborat" in c_label:
+                        st.success(f"**Analysis**: {case.get('explanation', '')}")
+                    elif "Contradiction" in c_label:
+                        st.error(f"**Analysis**: {case.get('explanation', '')}")
+                    elif "Reconciliation" in c_label:
+                        st.warning(f"**Analysis**: {case.get('explanation', '')}")
+                    else:
+                        st.info(f"**Analysis**: {case.get('explanation', '')}")
+
+                    fact_a = case.get("fact_a")
+                    fact_b = case.get("fact_b")
+
+                    if fact_a and fact_b:
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.markdown("#### Evidence A")
+                            st.markdown(f"**Claim**: {fact_a.get('claim')}")
+                            st.caption(f"📄 {fact_a.get('doc_filename', 'Document')} (Page {fact_a.get('page_number')})")
+                            st.markdown(f"> *\"{fact_a.get('source_quote', '')}\"*")
+                        with col2:
+                            st.markdown("#### Evidence B")
+                            st.markdown(f"**Claim**: {fact_b.get('claim')}")
+                            st.caption(f"📄 {fact_b.get('doc_filename', 'Document')} (Page {fact_b.get('page_number')})")
+                            st.markdown(f"> *\"{fact_b.get('source_quote', '')}\"*")
+                    elif fact_a:
+                        st.markdown("#### Identified Challenge / Limitation")
                         st.markdown(f"**Claim**: {fact_a.get('claim')}")
                         st.caption(f"📄 {fact_a.get('doc_filename', 'Document')} (Page {fact_a.get('page_number')})")
                         st.markdown(f"> *\"{fact_a.get('source_quote', '')}\"*")
-                    with col2:
-                        st.markdown("#### Evidence B")
-                        st.markdown(f"**Claim**: {fact_b.get('claim')}")
-                        st.caption(f"📄 {fact_b.get('doc_filename', 'Document')} (Page {fact_b.get('page_number')})")
-                        st.markdown(f"> *\"{fact_b.get('source_quote', '')}\"*")
-                elif fact_a:
-                    st.markdown("#### Isolated Fact / Failure Analysis")
-                    st.markdown(f"**Claim**: {fact_a.get('claim')}")
-                    st.caption(f"📄 {fact_a.get('doc_filename', 'Document')} (Page {fact_a.get('page_number')})")
-                    st.markdown(f"> *\"{fact_a.get('source_quote', '')}\"*")
 
-                st.divider()
+                    st.divider()
+
+        with tab_corrob:
+            if not corrobs:
+                st.info("No corroborations found.")
+            else:
+                for r in corrobs:
+                    fa = r.get("fact_a")
+                    fb = r.get("fact_b")
+                    st.markdown(f"**Signal Score**: {r.get('score')} | **Confidence**: {r.get('confidence'):.2f}")
+                    st.info(f"**Reconciliation Reasoning**: {r.get('explanation')}")
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        st.markdown(f"**Document A**: {fa.get('claim')}")
+                        st.caption(f"📄 {fa.get('doc_filename')} (Pg {fa.get('page_number')})")
+                        st.markdown(f"> *\"{fa.get('source_quote')}\"*")
+                    with c2:
+                        st.markdown(f"**Document B**: {fb.get('claim')}")
+                        st.caption(f"📄 {fb.get('doc_filename')} (Pg {fb.get('page_number')})")
+                        st.markdown(f"> *\"{fb.get('source_quote')}\"*")
+                    st.divider()
+
+        with tab_contra:
+            if not contras:
+                st.info("No contradictions found under this filter.")
+            else:
+                for r in contras:
+                    fa = r.get("fact_a")
+                    fb = r.get("fact_b")
+                    st.error(f"**Contradiction Detected** (Score: {r.get('score')} | Confidence: {r.get('confidence'):.2f})")
+                    st.markdown(f"**Conflict Reasoning**: {r.get('explanation')}")
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        st.markdown(f"**Document A**: {fa.get('claim')}")
+                        st.caption(f"📄 {fa.get('doc_filename')} (Pg {fa.get('page_number')})")
+                        st.markdown(f"> *\"{fa.get('source_quote')}\"*")
+                    with c2:
+                        st.markdown(f"**Document B**: {fb.get('claim')}")
+                        st.caption(f"📄 {fb.get('doc_filename')} (Pg {fb.get('page_number')})")
+                        st.markdown(f"> *\"{fb.get('source_quote')}\"*")
+                    st.divider()
+
+        with tab_recon:
+            if not recs:
+                st.info("No contextual reconciliations found.")
+            else:
+                for r in recs:
+                    fa = r.get("fact_a")
+                    fb = r.get("fact_b")
+                    st.warning(f"**Contextual Nuance** (Score: {r.get('score')} | Confidence: {r.get('confidence'):.2f})")
+                    st.markdown(f"**Resolution Reasoning**: {r.get('explanation')}")
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        st.markdown(f"**Document A**: {fa.get('claim')}")
+                        st.caption(f"📄 {fa.get('doc_filename')} (Pg {fa.get('page_number')})")
+                        st.markdown(f"> *\"{fa.get('source_quote')}\"*")
+                    with c2:
+                        st.markdown(f"**Document B**: {fb.get('claim')}")
+                        st.caption(f"📄 {fb.get('doc_filename')} (Pg {fb.get('page_number')})")
+                        st.markdown(f"> *\"{fb.get('source_quote')}\"*")
+                    st.divider()
+
+        with tab_limit:
+            if not limits:
+                st.info("No extraction limitations recorded.")
+            else:
+                for lim in limits:
+                    f = lim.get("fact", {})
+                    st.markdown(f"**Vulnerability in Layout / Token Stream** (Confidence: {lim.get('confidence'):.2f})")
+                    st.markdown(f"> *\"{f.get('claim')}\"*")
+                    st.caption(f"📄 {f.get('doc_filename')} (Pg {f.get('page_number')}) — Quote: \"{f.get('source_quote')}\"")
+                    st.info(f"**Mitigation Analysis**: {lim.get('limitation_analysis')}")
+                    st.divider()
+
     else:
         st.warning("Backend API not reachable at http://localhost:8000.")
 

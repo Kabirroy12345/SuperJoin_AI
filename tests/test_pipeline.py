@@ -250,7 +250,25 @@ def test_pipeline_cases_and_export(temp_db):
     assert len(cases) >= 1
     assert any(c.case_label == "Corroborated Fact" for c in cases)
 
+    # Test breakdown
+    breakdown = pipeline.get_cases_breakdown()
+    assert "corroborations" in breakdown
+    assert len(breakdown["corroborations"]) == 1
+    assert breakdown["counts"]["corroborations"] == 1
+    assert len(breakdown["featured_cases"]) >= 1
+
+    # Test doc-filtered breakdown
+    doc_breakdown = pipeline.get_cases_breakdown(doc_id="doc_a")
+    assert doc_breakdown["counts"]["corroborations"] == 1
+
     export_data = pipeline.export_results()
     assert export_data["summary"]["total_documents"] == 2
     assert export_data["summary"]["total_facts"] == 2
     assert export_data["summary"]["total_relationships"] == 1
+
+    # Test reset database
+    reset_res = pipeline.reset_database()
+    assert reset_res["status"] == "cleared"
+    assert len(pipeline.doc_store.get_all_documents()) == 0
+    assert len(pipeline.fact_store.get_facts()) == 0
+    assert len(pipeline.rel_store.get_all()) == 0

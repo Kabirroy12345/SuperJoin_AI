@@ -52,6 +52,23 @@ def test_get_cases():
     case_numbers = [c.get("case_number") for c in cases]
     assert 1 in case_numbers or 3 in case_numbers or 4 in case_numbers
 
+def test_get_cases_breakdown():
+    response = client.get("/api/cases/breakdown")
+    assert response.status_code == 200
+    data = response.json()
+    assert "counts" in data
+    assert "featured_cases" in data
+    assert "corroborations" in data
+    assert "contradictions" in data
+    assert "reconciliations" in data
+    assert "limitations" in data
+
+def test_dashboard_endpoint():
+    response = client.get("/dashboard")
+    assert response.status_code == 200
+    assert "Fact Knowledge Layer" in response.text
+    assert "The 4 Required Cases" in response.text
+
 def test_get_export():
     response = client.get("/api/export")
     assert response.status_code == 200
