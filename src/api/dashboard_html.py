@@ -638,7 +638,19 @@ def get_dashboard_html() -> str:
 
         <!-- Selected Files Queue -->
         <div id="selected-files-list" class="space-y-2 hidden" style="margin-top: 1rem;">
-          <h3 class="font-mono text-xs font-bold text-slate-300 uppercase">QUEUED FOR EXTRACTION:</h3>
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <h3 class="font-mono text-xs font-bold text-slate-300 uppercase">
+              QUEUED FOR EXTRACTION (<span id="queued-count" class="text-amber-400">0</span> FILES):
+            </h3>
+            <div style="display: flex; gap: 0.5rem;">
+              <button type="button" onclick="document.getElementById('file-input').click()" class="btn-terminal text-[11px] font-mono py-1 px-2.5">
+                + ADD MORE FILES
+              </button>
+              <button type="button" onclick="clearQueue()" class="btn-terminal text-[11px] font-mono py-1 px-2.5 text-rose-400">
+                CLEAR ALL
+              </button>
+            </div>
+          </div>
           <div id="files-container" class="space-y-1.5 font-mono text-xs"></div>
           <button type="button" id="upload-btn" onclick="startUpload()" class="btn-terminal primary w-full justify-center py-2.5 font-mono text-xs mt-2">
             START BATCH INGESTION PIPELINE
@@ -1340,22 +1352,57 @@ def get_dashboard_html() -> str:
       if (e.target.files) {
         addFilesToQueue(Array.from(e.target.files));
       }
+      e.target.value = ''; // Reset so user can pick additional files
     }
 
     function addFilesToQueue(files) {
       const pdfs = files.filter(f => f.name.toLowerCase().endsWith('.pdf'));
       if (pdfs.length === 0) {
-        alert('Please select valid PDF documents.');
+        alert('Please select valid PDF documents (.pdf format).');
         return;
       }
-      queuedFiles = pdfs;
+      // Append files, avoiding duplicate filenames in queue
+      pdfs.forEach(newFile => {
+        if (!queuedFiles.some(existing => existing.name === newFile.name)) {
+          queuedFiles.push(newFile);
+        }
+      });
+      renderQueue();
+    }
+
+    function removeFileFromQueue(index) {
+      queuedFiles.splice(index, 1);
+      renderQueue();
+    }
+
+    function clearQueue() {
+      queuedFiles = [];
+      renderQueue();
+    }
+
+    function renderQueue() {
       const list = document.getElementById('selected-files-list');
       const container = document.getElementById('files-container');
+      const countEl = document.getElementById('queued-count');
+      if (!list || !container) return;
+
+      if (queuedFiles.length === 0) {
+        list.classList.add('hidden');
+        container.innerHTML = '';
+        return;
+      }
+
       list.classList.remove('hidden');
-      container.innerHTML = queuedFiles.map(f => `
-        <div style="padding: 0.5rem 0.75rem; background: rgba(5, 7, 17, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #FFFFFF;">${f.name}</span>
-          <span style="color: #94A3B8;">${(f.size / 1024).toFixed(0)} KB</span>
+      if (countEl) countEl.innerText = queuedFiles.length;
+
+      container.innerHTML = queuedFiles.map((f, i) => `
+        <div style="padding: 0.5rem 0.75rem; background: rgba(5, 7, 17, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 4px; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; overflow: hidden;">
+            <span style="color: #F5D061; font-weight: 700;">[0${i+1}]</span>
+            <span style="color: #FFFFFF; font-family: var(--font-mono); font-size: 0.75rem; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${f.name}</span>
+            <span style="color: #94A3B8; font-size: 0.7rem; white-space: nowrap;">(${(f.size / 1024).toFixed(0)} KB)</span>
+          </div>
+          <button type="button" onclick="removeFileFromQueue(${i})" title="Remove file" class="text-rose-400 hover:text-rose-300 font-mono text-xs px-2 py-0.5 rounded bg-slate-900 border border-slate-800">&times;</button>
         </div>
       `).join('');
     }
