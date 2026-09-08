@@ -307,8 +307,7 @@ def get_dashboard_html() -> str:
         <p class="font-mono" style="color: #94A3B8; fontSize: 0.8rem; display: flex; align-items: center; gap: 0.4rem;">
           <span style="color: #38BDF8; font-weight: 600;">AUTONOMOUS AUDIT ENGINE:</span>
           <span>Filings ↔ Facts ↔ Verified Lineage</span>
-          <span style="color: #64748B;">•</span>
-          <span style="color: #F8FAFC;" id="dataset-banner-title">DELHIVERY_BENCHMARK_258_FACTS</span>
+          <span style="color: #F8FAFC;" id="dataset-banner-title">KNOWLEDGE_LAYER_ACTIVE</span>
         </p>
       </div>
 
@@ -800,6 +799,12 @@ def get_dashboard_html() -> str:
       document.getElementById('metric-doc-count').innerText = docCount;
       document.getElementById('metric-fact-count').innerText = factCount;
       document.getElementById('metric-rel-count').innerText = relCount;
+
+      const bannerEl = document.getElementById('dataset-banner-title');
+      if (bannerEl) {
+        const topDocs = cachedDocuments.map(d => d.filename.replace(/\.pdf$/i, '').toUpperCase()).slice(0, 2).join(' • ');
+        bannerEl.innerText = topDocs ? `${topDocs} [${factCount} FACTS]` : `CORPUS_ACTIVE [${factCount} FACTS]`;
+      }
 
       populateScopeFilters();
       renderCasesView();
@@ -1400,7 +1405,7 @@ def get_dashboard_html() -> str:
     async function confirmReset() {
       const confirmAction = confirm(
         `RESET TO BENCHMARK BASELINE\n\n` +
-        `This will restore the 3 benchmark Delhivery filings, 258 verified facts, and 47 relationships.\n\n` +
+        `This will restore the benchmark filings, verified facts, and cross-filing relationships.\n\n` +
         `Click OK to restore benchmark baseline, or Cancel to keep current state.`
       );
       if (!confirmAction) return;
@@ -1408,7 +1413,7 @@ def get_dashboard_html() -> str:
       try {
         const res = await fetch('/api/reset', { method: 'POST' });
         const data = await res.json();
-        alert('Benchmark baseline restored successfully! (3 Delhivery PDFs, 258 facts, 47 relationships)');
+        alert('Benchmark baseline restored successfully! (' + (data.message || 'Restored') + ')');
         window.location.reload();
       } catch (e) {
         alert('Error resetting database: ' + e.message);

@@ -631,7 +631,7 @@ class Pipeline:
                 logger.info("Database reset: restored to benchmark Delhivery baseline from snapshot.")
                 return {
                     "status": "restored",
-                    "message": "Database reset to benchmark baseline: all 3 Delhivery documents, 258 facts, and 47 relationships restored."
+                    "message": "Database reset to benchmark baseline: all 3 filings, 258 verified facts, and 47 relationships restored."
                 }
             else:
                 try:
@@ -639,7 +639,7 @@ class Pipeline:
                     seed_benchmark(self.db_path)
                     return {
                         "status": "restored",
-                        "message": "Database seeded with benchmark Delhivery documents, facts, and relationships."
+                        "message": "Database seeded with benchmark baseline documents, facts, and relationships."
                     }
                 except Exception as e:
                     logger.warning(f"Failed to seed benchmark: {e}")
