@@ -1,386 +1,540 @@
 def get_dashboard_html() -> str:
-    """Returns the standalone HTML/JS dashboard interface with modern enterprise styling."""
+    """Returns the RazorPay Hackathon Audit Terminal inspired dashboard interface."""
     return r"""<!DOCTYPE html>
-<html lang="en" class="h-full bg-[#080c14]">
+<html lang="en" class="h-full bg-[#050711]">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Superjoin | Cross-Filing Fact Reconciliation & Evidence Matrix</title>
+  <meta name="theme-color" content="#050711">
+  <title>SUPERJOIN // FACT_TERMINAL | Cross-Filing Audit & Reconciliation</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'monospace'],
-          },
-          colors: {
-            surface: {
-              50: '#f8fafc',
-              900: '#0c121e',
-              950: '#070a12',
-              card: '#0f172a',
-              cardhover: '#131d33',
-              border: '#1e293b',
-              borderlight: '#334155'
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: #080c14;
-      color: #f1f5f9;
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --bg-root: #050711;
+      --bg-surface: #0C101E;
+      --bg-surface-elevated: #131A30;
+      
+      --border-hairline: #1F2942;
+      --border-hover: #37476D;
+      --border-gold: rgba(229, 184, 105, 0.35);
+      
+      --text-primary: #F8FAFC;
+      --text-muted: #94A3B8;
+      --text-gold: #E5B869;
+      
+      --accent-amber: #E5B869;
+      --accent-gold: #F5D061;
+      --accent-red: #F43F5E;
+      --accent-sapphire: #0C8CE9;
+      --accent-emerald: #10B981;
+      
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-sans: system-ui, -apple-system, sans-serif;
     }
-    .glass-panel {
-      background: rgba(15, 23, 42, 0.75);
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-root);
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(229, 184, 105, 0.05) 0%, transparent 45%),
+        radial-gradient(circle at 85% 25%, rgba(12, 140, 233, 0.06) 0%, transparent 50%),
+        radial-gradient(circle at 50% 85%, rgba(139, 92, 246, 0.04) 0%, transparent 55%),
+        linear-gradient(180deg, #050711 0%, #03050B 100%);
+      background-attachment: fixed;
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-root);
+      border-left: 1px solid var(--border-hairline);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-hairline);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    @keyframes panel-cascade {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes badge-scan {
+      0% { left: -100%; }
+      20% { left: 200%; }
+      100% { left: 200%; }
+    }
+    @keyframes pulse-op {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    @keyframes data-flicker {
+      0% { opacity: 0.2; }
+      25% { opacity: 0.8; }
+      50% { opacity: 0.1; }
+      75% { opacity: 0.9; }
+      100% { opacity: 1; }
+    }
+    @keyframes drawer-slide {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+
+    .terminal-panel {
+      background: rgba(12, 16, 30, 0.78);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      animation: panel-cascade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
     }
-    .glass-nav {
-      background: rgba(8, 12, 20, 0.85);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(30, 41, 59, 0.7);
+    .terminal-panel:hover {
+      border-color: rgba(229, 184, 105, 0.25);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55), 0 0 20px rgba(229, 184, 105, 0.06);
     }
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 5px;
-      height: 5px;
+
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border: 1px solid currentColor;
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
     }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: #080c14;
+    .badge::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 50%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      animation: badge-scan 3s linear infinite;
     }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #1e293b;
-      border-radius: 9999px;
+
+    .badge-amber {
+      color: #F5D061;
+      background: rgba(245, 208, 97, 0.1);
+      border-color: rgba(245, 208, 97, 0.35);
+      box-shadow: 0 0 10px rgba(245, 208, 97, 0.12);
     }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #334155;
+    .badge-red {
+      color: #F43F5E;
+      background: rgba(244, 63, 94, 0.1);
+      border-color: rgba(244, 63, 94, 0.35);
+      box-shadow: 0 0 10px rgba(244, 63, 94, 0.12);
+    }
+    .badge-sapphire {
+      color: #38BDF8;
+      background: rgba(12, 140, 233, 0.1);
+      border-color: rgba(12, 140, 233, 0.35);
+      box-shadow: 0 0 10px rgba(12, 140, 233, 0.12);
+    }
+    .badge-emerald {
+      color: #10B981;
+      background: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.3);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.12);
+    }
+    .badge-purple {
+      color: #C084FC;
+      background: rgba(168, 85, 247, 0.1);
+      border-color: rgba(168, 85, 247, 0.35);
+    }
+
+    .btn-terminal {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.45rem 0.9rem;
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      background: rgba(15, 21, 38, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-terminal:hover:not(:disabled) {
+      background: rgba(25, 33, 58, 0.85);
+      border-color: rgba(229, 184, 105, 0.5);
+      color: #FFFFFF;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4), 0 0 12px rgba(229, 184, 105, 0.15);
+    }
+    .btn-terminal.primary {
+      background: linear-gradient(180deg, #F5D061 0%, #D4A346 100%);
+      color: #050711;
+      font-weight: 800;
+      border: 1px solid #FFE082;
+      box-shadow: 0 4px 18px rgba(212, 163, 70, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+    .btn-terminal.primary:hover:not(:disabled) {
+      background: linear-gradient(180deg, #FFE082 0%, #E5B869 100%);
+      box-shadow: 0 6px 24px rgba(245, 208, 97, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      transform: translateY(-1px);
+    }
+    .btn-terminal:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .pulse-indicator {
+      animation: pulse-op 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    .font-mono {
+      font-family: var(--font-mono);
     }
     .active-case-card {
-      border-color: #3b82f6 !important;
-      box-shadow: 0 0 0 1px #3b82f6, 0 8px 24px -4px rgba(59, 130, 246, 0.25);
+      border-color: #F5D061 !important;
+      background: rgba(245, 208, 97, 0.05) !important;
+      box-shadow: 0 0 20px rgba(245, 208, 97, 0.18) !important;
       transform: translateY(-2px);
-    }
-    .pill-active {
-      background: #2563eb !important;
-      color: #ffffff !important;
-      border-color: #3b82f6 !important;
     }
     .hidden { display: none !important; }
     .mark-highlight {
-      background-color: rgba(245, 158, 11, 0.25);
-      color: #fef08a;
+      background-color: rgba(245, 208, 97, 0.25);
+      color: #FEF08A;
       padding: 1px 3px;
-      border-radius: 3px;
-    }
-    .drawer-overlay {
-      background: rgba(3, 7, 18, 0.75);
-      backdrop-filter: blur(4px);
+      border-radius: 2px;
+      font-weight: 600;
     }
   </style>
 </head>
-<body class="h-full flex flex-col antialiased selection:bg-blue-600 selection:text-white">
+<body class="h-full flex flex-col antialiased selection:bg-amber-500/30 selection:text-white">
 
-  <!-- Top Executive Header -->
-  <header class="glass-nav sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16 gap-4">
-        
-        <!-- Platform Branding -->
-        <div class="flex items-center space-x-3.5 cursor-pointer" onclick="switchTab('cases')">
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-md shadow-blue-600/30 ring-1 ring-white/20">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-          </div>
-          <div>
-            <div class="flex items-center space-x-2">
-              <span class="font-extrabold text-sm tracking-tight text-white">SUPERJOIN</span>
-              <span class="text-slate-600">/</span>
-              <span class="text-xs font-semibold text-slate-300">Fact Knowledge Layer</span>
-              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
-                v2.4 Production
-              </span>
-            </div>
-            <p class="text-[11px] text-slate-400 hidden sm:block">Automated Cross-Filing Audit, Verification & Reconciliation Engine</p>
-          </div>
-        </div>
-
-        <!-- Global Action Controls -->
-        <div class="flex items-center space-x-2.5">
-          <div class="hidden lg:flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs">
-            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span class="text-slate-300 font-medium">Corpus Synced</span>
-            <span class="text-slate-600">|</span>
-            <span class="text-slate-400 font-mono text-[11px]" id="header-stats">3 Filings &bull; 258 Facts &bull; 47 Reconciliations</span>
-          </div>
-
-          <button type="button" onclick="confirmReset()" title="Restore benchmark Delhivery filings dataset" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 text-xs font-semibold transition">
-            <svg class="w-3.5 h-3.5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span class="hidden sm:inline">Reset Benchmark</span>
-          </button>
-
-          <a href="/docs" target="_blank" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 text-xs font-semibold transition">
-            <span>OpenAPI Spec</span>
-            <svg class="w-3 h-3 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </a>
-        </div>
-
+  <!-- TopNav Sticky Bar (from RazorPay TopNav.tsx) -->
+  <header style="position: sticky; top: 0; z-index: 90; background: rgba(5, 7, 17, 0.88); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding: 0.65rem 1.5rem; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);">
+    
+    <!-- Left: Breadcrumbs & Track -->
+    <div style="display: flex; align-items: center; gap: 0.85rem;">
+      <div style="display: flex; align-items: center; gap: 0.45rem; background: rgba(12, 140, 233, 0.1); border: 1px solid rgba(12, 140, 233, 0.28); padding: 0.22rem 0.65rem; border-radius: 20px;">
+        <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #0C8CE9; box-shadow: 0 0 8px #0C8CE9;"></span>
+        <span style="font-size: 0.68rem; font-weight: 800; color: #38BDF8; letter-spacing: 0.08em; font-family: var(--font-mono); text-transform: uppercase;">
+          FINANCE OPS // TERMINAL
+        </span>
       </div>
 
-      <!-- Navigation Tabs Strip -->
-      <nav class="flex space-x-1 border-t border-slate-800/80 overflow-x-auto py-2 custom-scrollbar">
-        <button type="button" onclick="switchTab('cases')" id="tab-cases-btn" class="nav-tab active px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-600 shadow-sm transition whitespace-nowrap flex items-center space-x-2">
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-          <span>Evidence Matrix (The 4 Required Cases)</span>
-        </button>
-
-        <button type="button" onclick="switchTab('documents')" id="tab-documents-btn" class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-900 transition whitespace-nowrap flex items-center space-x-2">
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          </svg>
-          <span>Source Filings (<span id="count-docs-nav">3</span>)</span>
-        </button>
-
-        <button type="button" onclick="switchTab('facts')" id="tab-facts-btn" class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-900 transition whitespace-nowrap flex items-center space-x-2">
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <span>Filing Fact Ledger (<span id="count-facts">258</span>)</span>
-        </button>
-
-        <button type="button" onclick="switchTab('relationships')" id="tab-relationships-btn" class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-900 transition whitespace-nowrap flex items-center space-x-2">
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-          </svg>
-          <span>Reconciliation Ledger (<span id="count-rels">47</span>)</span>
-        </button>
-
-        <button type="button" onclick="switchTab('upload')" id="tab-upload-btn" class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-900 transition whitespace-nowrap flex items-center space-x-2">
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-          </svg>
-          <span>Batch Ingestion Pipeline</span>
-        </button>
-
-        <button type="button" onclick="switchTab('export')" id="tab-export-btn" class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-900 transition whitespace-nowrap flex items-center space-x-2">
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <span>Graph Schema Export</span>
-        </button>
-      </nav>
+      <div style="display: flex; align-items: center; gap: 0.45rem; font-size: 0.8rem;">
+        <span style="color: #64748B; font-family: var(--font-mono);">/</span>
+        <span style="color: #F8FAFC; font-weight: 700; font-family: var(--font-mono); letter-spacing: 0.02em;">Superjoin</span>
+        <span style="color: #64748B; font-family: var(--font-mono);">/</span>
+        <span style="color: #94A3B8; font-size: 0.78rem;">Fact Knowledge Layer</span>
+        <span class="badge badge-amber" style="font-size: 0.65rem; padding: 0.1rem 0.35rem; margin-left: 0.2rem;">v2.5 PRO</span>
+      </div>
     </div>
+
+    <!-- Right: Clocks (UTC / IST) & Action Buttons -->
+    <div style="display: flex; align-items: center; gap: 0.85rem;">
+      <!-- Dual Time Display -->
+      <div class="hidden md:flex items-center gap-2 px-2.5 py-1 rounded bg-black/40 border border-slate-800 font-mono text-[11px] text-slate-400">
+        <span id="clock-utc" class="text-slate-300">--:--:-- UTC</span>
+        <span class="text-slate-600">|</span>
+        <span id="clock-ist" class="text-amber-400 font-semibold">--:--:-- IST</span>
+      </div>
+
+      <button type="button" onclick="confirmReset()" title="Reset to benchmark baseline" class="btn-terminal" style="font-size: 0.78rem; padding: 0.4rem 0.75rem;">
+        <svg class="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        <span class="font-mono text-[11px] hidden sm:inline">RESET_BASELINE</span>
+      </button>
+
+      <a href="/docs" target="_blank" class="btn-terminal font-mono text-[11px]" style="padding: 0.4rem 0.75rem;">
+        <span>API_DOCS</span>
+        <svg class="w-3 h-3 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+      </a>
+    </div>
+
   </header>
 
-  <!-- Executive Metric Ribbon -->
-  <section class="border-b border-slate-800/80 bg-slate-950/40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-      <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 text-xs">
-        
-        <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center space-x-3">
-          <div class="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-xs">
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          </div>
-          <div>
-            <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Indexed Filings</span>
-            <span class="text-sm font-extrabold text-white font-mono" id="ribbon-docs">3 Documents</span>
-          </div>
-        </div>
+  <!-- Main Container -->
+  <div style="max-width: 1440px; margin: 0 auto; padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; width: 100%;">
 
-        <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center space-x-3">
-          <div class="w-7 h-7 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center font-bold text-xs">
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+    <!-- HeaderBar (from RazorPay HeaderMetrics.tsx) -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding-bottom: 0.25rem;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div style="width: 28px; height: 28px; border-radius: 6px; background: rgba(12, 140, 233, 0.15); border: 1px solid rgba(12, 140, 233, 0.4); display: flex; align-items: center; justify-content: center; color: #0C8CE9; box-shadow: 0 0 10px rgba(12, 140, 233, 0.3);">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+            </div>
+            <h1 class="font-mono" style="font-size: 1.65rem; font-weight: 800; color: #FFFFFF; letter-spacing: 0.03em; text-shadow: 0 2px 14px rgba(0,0,0,0.8);">
+              SUPERJOIN<span style="color: #0C8CE9;">_AI</span>
+            </h1>
           </div>
-          <div>
-            <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Atomic Facts</span>
-            <span class="text-sm font-extrabold text-white font-mono" id="ribbon-facts">258 Facts</span>
-          </div>
+          <span class="badge" style="background: rgba(12, 140, 233, 0.1); border: 1px solid rgba(12, 140, 233, 0.35); color: #38BDF8; font-size: 0.7rem; font-weight: 700;">
+            TRACK 04 FINTECH AI
+          </span>
+          <span class="badge" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #10B981; font-size: 0.7rem; font-weight: 700;">
+            EVIDENCE RECONCILER
+          </span>
         </div>
+        <p class="font-mono" style="color: #94A3B8; fontSize: 0.8rem; display: flex; align-items: center; gap: 0.4rem;">
+          <span style="color: #38BDF8; font-weight: 600;">AUTONOMOUS AUDIT ENGINE:</span>
+          <span>Filings ↔ Facts ↔ Verified Lineage</span>
+          <span style="color: #64748B;">•</span>
+          <span style="color: #F8FAFC;" id="dataset-banner-title">DELHIVERY_BENCHMARK_258_FACTS</span>
+        </p>
+      </div>
 
-        <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center space-x-3">
-          <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-xs">
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          </div>
-          <div>
-            <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Consensus Rate</span>
-            <span class="text-sm font-extrabold text-emerald-400 font-mono">95.7%</span>
-          </div>
-        </div>
-
-        <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center space-x-3">
-          <div class="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-xs">
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-          </div>
-          <div>
-            <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Reconciliation Links</span>
-            <span class="text-sm font-extrabold text-white font-mono" id="ribbon-rels">47 Connections</span>
-          </div>
-        </div>
-
-        <div class="hidden lg:flex p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 items-center space-x-3">
-          <div class="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold text-xs">
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          </div>
-          <div>
-            <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Audited Timeframe</span>
-            <span class="text-sm font-extrabold text-white font-mono">FY22 &ndash; FY24</span>
-          </div>
-        </div>
-
+      <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+        <button type="button" onclick="switchTab('upload')" class="btn-terminal primary" style="font-size: 0.82rem; padding: 0.5rem 1.1rem; font-weight: 800;">
+          + INGEST NEW FILING PDF
+        </button>
       </div>
     </div>
-  </section>
 
-  <!-- Main Workstation Canvas -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
-
-    <!-- ======================================================== -->
-    <!-- VIEW 1: EVIDENCE VARIANCE MATRIX (THE 4 SCENARIOS) -->
-    <!-- ======================================================== -->
-    <section id="view-cases" class="space-y-6">
+    <!-- 5 Core Metric Cards (from RazorPay HeaderMetrics.tsx) -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem;">
       
-      <!-- Scope Filter & Document Lineage Strip -->
-      <div class="glass-panel rounded-2xl p-5 shadow-xl space-y-4">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <!-- Metric 1: Reconciliation Rate -->
+      <div class="terminal-panel" style="padding: 1.1rem; background: linear-gradient(135deg, rgba(245, 208, 97, 0.08) 0%, rgba(12, 16, 30, 0.85) 100%); border: 1px solid rgba(245, 208, 97, 0.28); border-top: 3px solid #F5D061; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+          <span style="color: #E5B869; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; font-family: var(--font-mono);">
+            RECON_RATE
+          </span>
+          <span class="badge badge-amber" style="padding: 0.1rem 0.35rem; font-size: 0.65rem;">CONSENSUS</span>
+        </div>
+        <div class="font-mono" style="font-size: 1.75rem; font-weight: 800; color: #FFFFFF; letter-spacing: -0.02em;">
+          95.7%
+        </div>
+        <div class="font-mono" style="font-size: 0.7rem; color: #94A3B8; margin-top: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+          <span style="color: #F5D061; font-weight: 700;" id="metric-rel-count">47</span>
+          <span>CROSS-FILING AUDITS</span>
+        </div>
+      </div>
+
+      <!-- Metric 2: Atomic Facts -->
+      <div class="terminal-panel" style="padding: 1.1rem; background: linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, rgba(12, 16, 30, 0.85) 100%); border: 1px solid rgba(56, 189, 248, 0.28); border-top: 3px solid #38BDF8; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+          <span style="color: #38BDF8; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; font-family: var(--font-mono);">
+            ATOMIC_FACTS
+          </span>
+          <span class="badge badge-sapphire" style="padding: 0.1rem 0.35rem; font-size: 0.65rem;">VERIFIED</span>
+        </div>
+        <div class="font-mono" style="font-size: 1.75rem; font-weight: 800; color: #FFFFFF; letter-spacing: -0.02em;" id="metric-fact-count">
+          258
+        </div>
+        <div class="font-mono" style="font-size: 0.7rem; color: #94A3B8; margin-top: 0.35rem; display: flex; align-items: center; gap: 0.3rem;">
+          <span style="color: #38BDF8; font-weight: 700;">100% GROUNDED</span>
+          <span>WITH PAGE QUOTES</span>
+        </div>
+      </div>
+
+      <!-- Metric 3: Indexed Filings -->
+      <div class="terminal-panel" style="padding: 1.1rem; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(12, 16, 30, 0.85) 100%); border: 1px solid rgba(16, 185, 129, 0.28); border-top: 3px solid #10B981; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+          <span style="color: #10B981; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; font-family: var(--font-mono);">
+            INDEXED_FILINGS
+          </span>
+          <span class="badge badge-emerald" style="padding: 0.1rem 0.35rem; font-size: 0.65rem;">ACTIVE</span>
+        </div>
+        <div class="font-mono" style="font-size: 1.75rem; font-weight: 800; color: #FFFFFF; letter-spacing: -0.02em;" id="metric-doc-count">
+          3
+        </div>
+        <div class="font-mono" style="font-size: 0.7rem; color: #94A3B8; margin-top: 0.35rem; display: flex; align-items: center; gap: 0.3rem;">
+          <span style="color: #10B981; font-weight: 700;">227 PAGES</span>
+          <span>COMBINED EXCERPTS</span>
+        </div>
+      </div>
+
+      <!-- Metric 4: Audited Scenarios -->
+      <div class="terminal-panel" style="padding: 1.1rem; background: linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, rgba(12, 16, 30, 0.85) 100%); border: 1px solid rgba(168, 85, 247, 0.28); border-top: 3px solid #A855F7; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+          <span style="color: #C084FC; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; font-family: var(--font-mono);">
+            REQUIRED_CASES
+          </span>
+          <span class="badge badge-purple" style="padding: 0.1rem 0.35rem; font-size: 0.65rem;">AUDITED</span>
+        </div>
+        <div class="font-mono" style="font-size: 1.75rem; font-weight: 800; color: #FFFFFF; letter-spacing: -0.02em;">
+          4 / 4
+        </div>
+        <div class="font-mono" style="font-size: 0.7rem; color: #94A3B8; margin-top: 0.35rem; display: flex; align-items: center; gap: 0.3rem;">
+          <span style="color: #C084FC; font-weight: 700;">ALL SCENARIOS</span>
+          <span>DEMONSTRATED</span>
+        </div>
+      </div>
+
+      <!-- Metric 5: Audited Horizon -->
+      <div class="terminal-panel" style="padding: 1.1rem; background: linear-gradient(135deg, rgba(244, 63, 94, 0.08) 0%, rgba(12, 16, 30, 0.85) 100%); border: 1px solid rgba(244, 63, 94, 0.28); border-top: 3px solid #F43F5E; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+          <span style="color: #F43F5E; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; font-family: var(--font-mono);">
+            AUDITED_HORIZON
+          </span>
+          <span class="badge badge-red" style="padding: 0.1rem 0.35rem; font-size: 0.65rem;">FISCAL</span>
+        </div>
+        <div class="font-mono" style="font-size: 1.75rem; font-weight: 800; color: #FFFFFF; letter-spacing: -0.02em;">
+          FY22-24
+        </div>
+        <div class="font-mono" style="font-size: 0.7rem; color: #94A3B8; margin-top: 0.35rem; display: flex; align-items: center; gap: 0.3rem;">
+          <span style="color: #F43F5E; font-weight: 700;">TEMPORAL</span>
+          <span>MULTI-YEAR AUDIT</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Navigation Tabs Strip -->
+    <div style="display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.35rem 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+      <button type="button" onclick="switchTab('cases')" id="tab-cases-btn" class="btn-terminal primary font-mono text-xs">
+        [1] EVIDENCE MATRIX (The 4 Required Cases)
+      </button>
+      <button type="button" onclick="switchTab('documents')" id="tab-documents-btn" class="btn-terminal font-mono text-xs">
+        [2] SOURCE FILINGS (<span id="count-docs-nav">3</span>)
+      </button>
+      <button type="button" onclick="switchTab('facts')" id="tab-facts-btn" class="btn-terminal font-mono text-xs">
+        [3] ATOMIC FACT LEDGER (<span id="count-facts">258</span>)
+      </button>
+      <button type="button" onclick="switchTab('relationships')" id="tab-relationships-btn" class="btn-terminal font-mono text-xs">
+        [4] RECONCILIATION LEDGER (<span id="count-rels">47</span>)
+      </button>
+      <button type="button" onclick="switchTab('upload')" id="tab-upload-btn" class="btn-terminal font-mono text-xs">
+        [5] BATCH INGESTION PIPELINE
+      </button>
+      <button type="button" onclick="switchTab('export')" id="tab-export-btn" class="btn-terminal font-mono text-xs">
+        [6] GRAPH EXPORT
+      </button>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- VIEW 1: EVIDENCE VARIANCE MATRIX (THE 4 REQUIRED CASES) -->
+    <!-- ======================================================== -->
+    <section id="view-cases" class="space-y-4">
+      
+      <!-- Scope Filter & Filings Bar -->
+      <div class="terminal-panel" style="padding: 1rem 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
           <div>
-            <h2 class="text-base font-bold text-white tracking-tight flex items-center space-x-2">
-              <span>Cross-Filing Evidence Variance Matrix</span>
-            </h2>
-            <p class="text-xs text-slate-400 mt-0.5">
-              Side-by-side evidence diff arena evaluating factual consensus, reported contradictions, contextual reconciliations, and layout limitations.
+            <span class="font-mono" style="font-size: 0.75rem; color: #E5B869; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">
+              CROSS-DOCUMENT EVIDENCE VARIANCE MATRIX (THE 4 REQUIRED CASES)
+            </span>
+            <p style="color: #94A3B8; font-size: 0.78rem; margin-top: 0.2rem;">
+              Audited cross-referencing of factual consensus, reported contradictions, contextual reconciliations, and extraction limitations.
             </p>
           </div>
 
-          <div class="flex items-center space-x-3 w-full md:w-auto">
-            <label for="case-doc-filter" class="text-xs font-semibold text-slate-400 whitespace-nowrap">
-              Filing Scope:
-            </label>
-            <select id="case-doc-filter" onchange="onCaseDocFilterChange()" class="w-full md:w-80 bg-slate-950 text-white text-xs rounded-xl border border-slate-700/80 px-3.5 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
-              <option value="">All Documents (Global Knowledge Base)</option>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <label for="case-doc-filter" style="font-size: 0.75rem; font-family: var(--font-mono); color: #94A3B8;">SCOPE:</label>
+            <select id="case-doc-filter" onchange="onCaseDocFilterChange()" style="background: rgba(5, 7, 17, 0.85); color: #FFFFFF; font-family: var(--font-mono); font-size: 0.75rem; padding: 0.35rem 0.65rem; border-radius: 4px; border: 1px solid var(--border-hairline); outline: none;">
+              <option value="">ALL FILINGS (GLOBAL KNOWLEDGE BASE)</option>
             </select>
           </div>
         </div>
 
-        <!-- Ingested Source Filings Badges -->
-        <div class="pt-3 border-t border-slate-800/80">
-          <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center justify-between">
-            <span>Indexed Source Filings:</span>
-            <button type="button" onclick="switchTab('documents')" class="text-blue-400 hover:text-blue-300 normal-case font-medium text-xs">View Document Registry &rarr;</button>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5" id="active-docs-banner">
-            <!-- Populated dynamically via JS -->
-          </div>
+        <div style="margin-top: 0.75rem; padding-top: 0.65rem; border-top: 1px solid rgba(255, 255, 255, 0.06); display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <span style="font-size: 0.7rem; font-family: var(--font-mono); color: #64748B;">INDEXED FILINGS:</span>
+          <div id="cases-doc-chips" style="display: flex; gap: 0.4rem; flex-wrap: wrap;"></div>
         </div>
       </div>
 
-      <!-- The 4 Scenario Switcher Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="scenario-selector-grid">
+      <!-- 4 Scenarios Selector (styled like RazorPay cards) -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 0.85rem;">
         
-        <!-- Case 1: Corroboration -->
-        <div onclick="selectCaseByIndex(0)" id="case-btn-0" class="case-card active-case-card cursor-pointer bg-slate-900/90 border border-slate-800 hover:border-emerald-500/50 rounded-2xl p-4 transition-all duration-200 relative overflow-hidden group">
-          <div class="flex justify-between items-start">
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              Scenario 1
-            </span>
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 ring-4 ring-emerald-500/20"></span>
+        <!-- Scenario 1: Corroboration -->
+        <div onclick="selectCaseTab(1)" id="case-card-1" class="terminal-panel active-case-card cursor-pointer" style="padding: 1rem 1.15rem; border-left: 4px solid #10B981;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+            <span class="badge badge-emerald" style="font-size: 0.65rem;">SCENARIO // 01</span>
+            <span class="font-mono text-emerald-400 text-xs font-bold" id="case-count-1">12 INSTANCES</span>
           </div>
-          <h3 class="font-bold text-sm text-white mt-2.5 group-hover:text-emerald-300 transition">Corroborated Consensus</h3>
-          <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">Independent filings confirm identical reported metrics or corporate events.</p>
-          <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Discovered:</span>
-            <span class="font-bold text-emerald-400 font-mono" id="badge-corrobs-count">12 instances</span>
-          </div>
+          <h3 class="font-mono text-xs font-bold text-white tracking-wide">CORROBORATED FACT</h3>
+          <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">
+            Independent disclosures confirming identical numerical or operational metrics.
+          </p>
         </div>
 
-        <!-- Case 2: Contradiction -->
-        <div onclick="selectCaseByIndex(1)" id="case-btn-1" class="case-card cursor-pointer bg-slate-900/90 border border-slate-800 hover:border-rose-500/50 rounded-2xl p-4 transition-all duration-200 relative overflow-hidden group">
-          <div class="flex justify-between items-start">
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">
-              Scenario 2
-            </span>
-            <span class="w-2.5 h-2.5 rounded-full bg-rose-400 ring-4 ring-rose-500/20"></span>
+        <!-- Scenario 2: Contradiction -->
+        <div onclick="selectCaseTab(2)" id="case-card-2" class="terminal-panel cursor-pointer" style="padding: 1rem 1.15rem; border-left: 4px solid #F43F5E;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+            <span class="badge badge-red" style="font-size: 0.65rem;">SCENARIO // 02</span>
+            <span class="font-mono text-rose-400 text-xs font-bold" id="case-count-2">2 INSTANCES</span>
           </div>
-          <h3 class="font-bold text-sm text-white mt-2.5 group-hover:text-rose-300 transition">Reported Variance & Conflict</h3>
-          <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">Conflicting metrics or contradictory status assertions for matching scopes.</p>
-          <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Discovered:</span>
-            <span class="font-bold text-rose-400 font-mono" id="badge-contras-count">2 instances</span>
-          </div>
+          <h3 class="font-mono text-xs font-bold text-white tracking-wide">GENUINE CONTRADICTION</h3>
+          <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">
+            Conflicting figures or mutually exclusive claims across independent filings.
+          </p>
         </div>
 
-        <!-- Case 3: Reconciliation -->
-        <div onclick="selectCaseByIndex(2)" id="case-btn-2" class="case-card cursor-pointer bg-slate-900/90 border border-slate-800 hover:border-amber-500/50 rounded-2xl p-4 transition-all duration-200 relative overflow-hidden group">
-          <div class="flex justify-between items-start">
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              Scenario 3
-            </span>
-            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 ring-4 ring-amber-500/20"></span>
+        <!-- Scenario 3: Contextual Reconciliation -->
+        <div onclick="selectCaseTab(3)" id="case-card-3" class="terminal-panel cursor-pointer" style="padding: 1rem 1.15rem; border-left: 4px solid #F5D061;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+            <span class="badge badge-amber" style="font-size: 0.65rem;">SCENARIO // 03</span>
+            <span class="font-mono text-amber-400 text-xs font-bold" id="case-count-3">33 INSTANCES</span>
           </div>
-          <h3 class="font-bold text-sm text-white mt-2.5 group-hover:text-amber-300 transition">Contextual Reconciliation</h3>
-          <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">Apparent discrepancy resolved by fiscal timeframe, scope, or accounting basis.</p>
-          <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Discovered:</span>
-            <span class="font-bold text-amber-400 font-mono" id="badge-recs-count">33 instances</span>
-          </div>
+          <h3 class="font-mono text-xs font-bold text-white tracking-wide">CONTEXTUAL RECONCILIATION</h3>
+          <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">
+            Apparent discrepancies explained by differing timeframes, reporting scopes, or units.
+          </p>
         </div>
 
-        <!-- Case 4: Limitation -->
-        <div onclick="selectCaseByIndex(3)" id="case-btn-3" class="case-card cursor-pointer bg-slate-900/90 border border-slate-800 hover:border-purple-500/50 rounded-2xl p-4 transition-all duration-200 relative overflow-hidden group">
-          <div class="flex justify-between items-start">
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-purple-500/10 text-purple-400 border border-purple-500/20">
-              Scenario 4
-            </span>
-            <span class="w-2.5 h-2.5 rounded-full bg-purple-400 ring-4 ring-purple-500/20"></span>
+        <!-- Scenario 4: Extraction Limitations -->
+        <div onclick="selectCaseTab(4)" id="case-card-4" class="terminal-panel cursor-pointer" style="padding: 1rem 1.15rem; border-left: 4px solid #38BDF8;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+            <span class="badge badge-sapphire" style="font-size: 0.65rem;">SCENARIO // 04</span>
+            <span class="font-mono text-sky-400 text-xs font-bold" id="case-count-4">10 DETECTED</span>
           </div>
-          <h3 class="font-bold text-sm text-white mt-2.5 group-hover:text-purple-300 transition">Spatial Layout Edge Case</h3>
-          <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">Visual layout / tabular challenges & spatial coordinate engineering mitigation.</p>
-          <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Identified:</span>
-            <span class="font-bold text-purple-400 font-mono" id="badge-limits-count">10 instances</span>
-          </div>
+          <h3 class="font-mono text-xs font-bold text-white tracking-wide">EXTRACTION LIMITATION</h3>
+          <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">
+            Isolated chart tokens or multi-column layout challenges with technical mitigation roadmap.
+          </p>
         </div>
 
       </div>
 
-      <!-- Spotlight Evidence Comparison Arena -->
-      <div class="glass-panel rounded-2xl p-6 shadow-2xl space-y-6" id="spotlight-display-arena">
-        <div class="p-8 text-center text-slate-500 text-xs">Loading evidence comparison arena...</div>
+      <!-- Spotlight Evidence Arena (Side-by-Side Diff, from AdversarialSpotlight.tsx) -->
+      <div id="case-spotlight-arena">
+        <!-- Injected via renderSpotlight() -->
       </div>
 
-      <!-- Categorized Instance Drawer (Detailed Repository) -->
-      <div class="glass-panel rounded-2xl p-5 shadow-xl space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+      <!-- All Instances Catalog for Selected Scenario -->
+      <div class="terminal-panel" style="padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.75rem; margin-bottom: 1rem;">
           <div>
-            <h3 class="font-bold text-sm text-white" id="category-drawer-title">All Discovered Corroborations</h3>
-            <p class="text-xs text-slate-400">Full repository of verified evidence pairs discovered across filings.</p>
+            <h3 class="font-mono text-xs font-bold text-white uppercase tracking-wider" id="catalog-title">
+              ALL CORROBORATION AUDITS
+            </h3>
+            <p class="text-[11px] text-slate-400 font-sans mt-0.5" id="catalog-subtitle">
+              Comprehensive list of all cross-document consensus pairs discovered in the corpus.
+            </p>
           </div>
-          <div class="flex items-center space-x-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
-            <button type="button" onclick="switchCategoryView('corroborations')" id="cat-btn-corroborations" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white shadow-sm transition">Corroborations</button>
-            <button type="button" onclick="switchCategoryView('contradictions')" id="cat-btn-contradictions" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition">Contradictions</button>
-            <button type="button" onclick="switchCategoryView('reconciliations')" id="cat-btn-reconciliations" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition">Reconciliations</button>
-            <button type="button" onclick="switchCategoryView('limitations')" id="cat-btn-limitations" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition">Limitations</button>
-          </div>
+          <span class="badge badge-amber" id="catalog-count-badge">12 Records</span>
         </div>
-
-        <div class="space-y-3 max-h-96 overflow-y-auto custom-scrollbar pr-1" id="category-instances-container">
-          <div class="p-4 text-center text-slate-500 text-xs">Loading instances...</div>
-        </div>
+        
+        <div id="catalog-items-container" class="space-y-3"></div>
       </div>
 
     </section>
@@ -388,731 +542,616 @@ def get_dashboard_html() -> str:
     <!-- ======================================================== -->
     <!-- VIEW 2: SOURCE FILINGS REGISTRY -->
     <!-- ======================================================== -->
-    <section id="view-documents" class="space-y-6 hidden">
-      <div class="glass-panel rounded-2xl p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 class="text-base font-bold text-white tracking-tight flex items-center space-x-2">
-            <span>Source Documents & Ground-Truth Registry</span>
-          </h2>
-          <p class="text-xs text-slate-400 mt-0.5">
-            Full repository of ingested filings indexed into page-level chunks with token coordinates and extracted facts.
-          </p>
+    <section id="view-documents" class="space-y-4 hidden">
+      <div class="terminal-panel" style="padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+          <div>
+            <h2 class="font-mono text-xs font-bold text-white uppercase tracking-wider">INDEXED SOURCE FILINGS</h2>
+            <p class="text-xs text-slate-400 font-sans mt-0.5">
+              Verified corporate filings ingested into the knowledge layer with complete page-level chunk mappings.
+            </p>
+          </div>
+          <button type="button" onclick="switchTab('upload')" class="btn-terminal primary text-xs font-mono">
+            + INGEST NEW FILING PDF
+          </button>
         </div>
-        <button type="button" onclick="switchTab('upload')" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition flex items-center space-x-1.5 self-start md:self-auto">
-          <span>+ Ingest Additional Documents</span>
-        </button>
-      </div>
 
-      <!-- Detailed Documents Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-5" id="documents-showcase-grid">
-        <div class="p-8 text-center text-slate-500 col-span-3 text-xs">Loading documents...</div>
+        <div id="documents-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;"></div>
       </div>
     </section>
 
     <!-- ======================================================== -->
-    <!-- VIEW 3: FILING FACT LEDGER (EXPLORER) -->
+    <!-- VIEW 3: FILING FACT LEDGER -->
     <!-- ======================================================== -->
-    <section id="view-facts" class="space-y-6 hidden">
-      <div class="glass-panel rounded-2xl p-5 shadow-xl space-y-4">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <section id="view-facts" class="space-y-4 hidden">
+      <div class="terminal-panel" style="padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.75rem; margin-bottom: 1rem;">
           <div>
-            <h2 class="text-base font-bold text-white tracking-tight">Filing Fact Ledger</h2>
-            <p class="text-xs text-slate-400 mt-0.5">Atomic structured assertions extracted from source filings with verbatim grounding quotes.</p>
+            <h2 class="font-mono text-xs font-bold text-white uppercase tracking-wider">ATOMIC FACT LEDGER</h2>
+            <p class="text-xs text-slate-400 font-sans mt-0.5">
+              Every assertion extracted as a verifiable semantic triple (Subject &rarr; Predicate &rarr; Object) with 100% source quotes.
+            </p>
           </div>
-          <span class="text-xs text-slate-400 font-mono" id="facts-counter-text">Showing facts...</span>
-        </div>
 
-        <!-- Filter Controls -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div class="md:col-span-2 relative">
-            <input type="text" id="fact-search" oninput="filterFacts()" placeholder="Search claims, subjects, entities, figures, or metrics..." class="w-full bg-slate-950 text-white text-xs rounded-xl border border-slate-800 px-4 py-2.5 pl-9 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
-            <svg class="w-4 h-4 text-slate-500 absolute left-3 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
           <div>
-            <select id="doc-filter" onchange="filterFacts()" class="w-full bg-slate-950 text-white text-xs rounded-xl border border-slate-800 px-3.5 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
-              <option value="all">All Documents</option>
+            <select id="facts-doc-filter" onchange="filterFacts()" style="background: rgba(5, 7, 17, 0.85); color: #FFFFFF; font-family: var(--font-mono); font-size: 0.75rem; padding: 0.35rem 0.65rem; border-radius: 4px; border: 1px solid var(--border-hairline); outline: none;">
+              <option value="">ALL FILINGS</option>
             </select>
           </div>
         </div>
 
-        <!-- Category Filter Pills -->
-        <div class="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
-          <span class="text-[11px] font-bold text-slate-400 mr-1 uppercase tracking-wider">Category:</span>
-          <button type="button" onclick="filterByCategory('all')" id="cat-pill-all" class="cat-pill pill-active px-3 py-1 rounded-lg font-semibold bg-blue-600 text-white border border-blue-500 transition">All</button>
-          <button type="button" onclick="filterByCategory('financial')" id="cat-pill-financial" class="cat-pill px-3 py-1 rounded-lg font-semibold bg-slate-900 text-slate-300 hover:text-white border border-slate-800 transition">Financial & Metrics</button>
-          <button type="button" onclick="filterByCategory('operational')" id="cat-pill-operational" class="cat-pill px-3 py-1 rounded-lg font-semibold bg-slate-900 text-slate-300 hover:text-white border border-slate-800 transition">Operational Reach</button>
-          <button type="button" onclick="filterByCategory('strategic')" id="cat-pill-strategic" class="cat-pill px-3 py-1 rounded-lg font-semibold bg-slate-900 text-slate-300 hover:text-white border border-slate-800 transition">M&A & Strategic</button>
-          <button type="button" onclick="filterByCategory('personnel')" id="cat-pill-personnel" class="cat-pill px-3 py-1 rounded-lg font-semibold bg-slate-900 text-slate-300 hover:text-white border border-slate-800 transition">Governance & Officers</button>
+        <!-- Search Bar -->
+        <div class="relative" style="margin-bottom: 1rem;">
+          <input type="text" id="facts-search" oninput="filterFacts()" placeholder="> FILTER CLAIMS BY KEYWORD, ENTITY, OR METRIC (E.G. EBITDA, FALCON, REVENUE, CASH)..." style="width: 100%; background: rgba(5, 7, 17, 0.75); color: #FFFFFF; font-family: var(--font-mono); font-size: 0.78rem; padding: 0.65rem 1rem 0.65rem 2.25rem; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1); outline: none;" class="placeholder:text-slate-500 focus:border-amber-400">
+          <svg class="w-4 h-4 text-slate-500 absolute left-2.5 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
         </div>
-      </div>
 
-      <!-- Facts Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="facts-container">
-        <div class="p-8 text-center text-slate-500 col-span-2 text-xs">Loading facts...</div>
+        <div id="facts-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 0.85rem;"></div>
       </div>
     </section>
 
     <!-- ======================================================== -->
     <!-- VIEW 4: RECONCILIATION LEDGER -->
     <!-- ======================================================== -->
-    <section id="view-relationships" class="space-y-6 hidden">
-      <div class="glass-panel rounded-2xl p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 class="text-base font-bold text-white tracking-tight">Cross-Filing Reconciliation Ledger</h2>
-          <p class="text-xs text-slate-400 mt-0.5">Semantic pairings evaluated and classified across independent documents.</p>
+    <section id="view-relationships" class="space-y-4 hidden">
+      <div class="terminal-panel" style="padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+          <div>
+            <h2 class="font-mono text-xs font-bold text-white uppercase tracking-wider">CROSS-FILING AUDIT RECONCILIATION LEDGER</h2>
+            <p class="text-xs text-slate-400 font-sans mt-0.5">
+              Every cross-filing candidate pair evaluated by vector cosine similarity and audited by LLM consensus logic.
+            </p>
+          </div>
+          
+          <div style="display: flex; gap: 0.35rem; font-family: var(--font-mono); font-size: 0.75rem;">
+            <button type="button" onclick="filterRelationships('all')" id="rel-filter-all" class="btn-terminal primary" style="padding: 0.3rem 0.65rem; font-size: 0.72rem;">ALL (47)</button>
+            <button type="button" onclick="filterRelationships('corroboration')" id="rel-filter-corroboration" class="btn-terminal text-emerald-400" style="padding: 0.3rem 0.65rem; font-size: 0.72rem;">CORROB (12)</button>
+            <button type="button" onclick="filterRelationships('contradiction')" id="rel-filter-contradiction" class="btn-terminal text-rose-400" style="padding: 0.3rem 0.65rem; font-size: 0.72rem;">CONTRAD (2)</button>
+            <button type="button" onclick="filterRelationships('contextual_reconciliation')" id="rel-filter-reconciliation" class="btn-terminal text-amber-400" style="padding: 0.3rem 0.65rem; font-size: 0.72rem;">RECON (33)</button>
+          </div>
         </div>
 
-        <!-- Type Filter Buttons -->
-        <div class="flex items-center space-x-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
-          <button type="button" onclick="filterRelationships('all')" id="filter-rel-all" class="rel-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-sm transition">All</button>
-          <button type="button" onclick="filterRelationships('corroboration')" id="filter-rel-corroboration" class="rel-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 text-slate-300 hover:text-white border border-slate-800 transition">Corroborations</button>
-          <button type="button" onclick="filterRelationships('contradiction')" id="filter-rel-contradiction" class="rel-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 text-slate-300 hover:text-white border border-slate-800 transition">Contradictions</button>
-          <button type="button" onclick="filterRelationships('contextual_reconciliation')" id="filter-rel-contextual_reconciliation" class="rel-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 text-slate-300 hover:text-white border border-slate-800 transition">Reconciliations</button>
-        </div>
-      </div>
-
-      <div class="text-xs text-slate-400 font-mono" id="rel-filter-count">Showing relationships...</div>
-
-      <div class="space-y-4" id="relationships-container">
-        <div class="p-8 text-center text-slate-500 text-xs">Loading relationships...</div>
+        <div id="relationships-container" class="space-y-3"></div>
       </div>
     </section>
 
     <!-- ======================================================== -->
     <!-- VIEW 5: BATCH INGESTION PIPELINE -->
     <!-- ======================================================== -->
-    <section id="view-upload" class="space-y-6 hidden">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <!-- Upload Pipeline Box -->
-        <div class="lg:col-span-2 glass-panel rounded-2xl p-6 shadow-xl space-y-5">
-          <div>
-            <h2 class="text-base font-bold text-white tracking-tight">Batch PDF Ingestion Pipeline</h2>
-            <p class="text-xs text-slate-400 mt-0.5">Ingest new corporate filings, financial disclosures, or regulatory releases into the knowledge graph.</p>
-          </div>
-
-          <!-- Dropzone -->
-          <form id="upload-form" onsubmit="handleBatchUpload(event)">
-            <label for="pdf-file-input" class="flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-800 hover:border-blue-500 rounded-2xl cursor-pointer bg-slate-950/60 hover:bg-slate-950 transition group">
-              <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center group-hover:scale-110 transition duration-200 mb-3">
-                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-              </div>
-              <p class="text-xs font-semibold text-slate-200 mb-1">Click to browse or drop PDF documents here</p>
-              <p class="text-[11px] text-slate-500">Supports multi-file batch upload (.pdf)</p>
-              <input type="file" id="pdf-file-input" multiple accept=".pdf" class="hidden" onchange="handleFileSelect(event)">
-            </label>
-
-            <!-- File List Chips -->
-            <div id="selected-files-container" class="mt-4 hidden space-y-2">
-              <div class="flex items-center justify-between text-xs">
-                <span class="font-semibold text-slate-300">Staged Documents (<span id="selected-files-count">0</span>):</span>
-                <button type="button" onclick="clearSelectedFiles()" class="text-rose-400 hover:text-rose-300 text-[11px]">Clear All</button>
-              </div>
-              <div id="file-chips-list" class="flex flex-wrap gap-2"></div>
-            </div>
-
-            <!-- Ingest Action Button -->
-            <div class="mt-5 flex justify-end">
-              <button type="submit" id="upload-btn" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition flex items-center space-x-2">
-                <span>Start Ingestion & Reconciliation</span>
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </button>
-            </div>
-          </form>
-
-          <!-- Upload Progress & Status Alert -->
-          <div id="upload-status" class="hidden p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-            <div class="flex justify-between items-center text-xs">
-              <span class="font-semibold text-white" id="upload-status-title">Processing Filings...</span>
-              <span class="text-blue-400 font-mono" id="upload-status-pct">0%</span>
-            </div>
-            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-              <div id="upload-progress-bar" class="bg-gradient-to-r from-blue-500 to-indigo-500 h-full w-0 transition-all duration-300"></div>
-            </div>
-            <p class="text-[11px] text-slate-400" id="upload-status-text">Parsing layout streams, extracting facts, and reconciling pairs...</p>
-          </div>
+    <section id="view-upload" class="space-y-4 hidden">
+      <div class="terminal-panel" style="padding: 1.5rem;">
+        <div style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+          <h2 class="font-mono text-xs font-bold text-white uppercase tracking-wider">BATCH PDF INGESTION TERMINAL</h2>
+          <p class="text-xs text-slate-400 font-sans mt-0.5">
+            Ingest corporate filings into the knowledge layer. PDFs are parsed into text and tables, converted to atomic facts, embedded into 3072-dim space, and paired without hardcoded rules.
+          </p>
         </div>
 
-        <!-- Ingested Documents List Sidecard -->
-        <div class="glass-panel rounded-2xl p-6 shadow-xl space-y-4">
-          <div class="flex items-center justify-between">
-            <h3 class="font-bold text-sm text-white">Indexed Documents</h3>
-            <span class="text-xs text-blue-400 font-mono" id="ingested-docs-count">0 documents</span>
+        <!-- Drag & Drop Zone -->
+        <div id="drop-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)" onclick="document.getElementById('file-input').click()" style="border: 2px dashed rgba(255, 255, 255, 0.15); background: rgba(5, 7, 17, 0.5); border-radius: 8px; padding: 2.5rem 1.5rem; text-align: center; cursor: pointer; transition: all 0.2s;" class="hover:border-amber-400/80">
+          <input type="file" id="file-input" multiple accept=".pdf" class="hidden" onchange="handleFileSelect(event)">
+          <div style="width: 44px; height: 44px; border-radius: 8px; background: rgba(245, 208, 97, 0.1); border: 1px solid rgba(245, 208, 97, 0.3); display: flex; align-items: center; justify-content: center; color: #F5D061; margin: 0 auto 0.75rem;">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+            </svg>
           </div>
-          <div id="ingested-docs-list" class="space-y-2.5 max-h-96 overflow-y-auto custom-scrollbar pr-1">
-            <div class="text-xs text-slate-500 italic p-3">Loading documents...</div>
-          </div>
+          <p class="font-mono text-xs font-bold text-white uppercase tracking-wider">CLICK OR DRAG PDF FILINGS TO UPLOAD</p>
+          <p class="text-[11px] text-slate-400 mt-1">Multi-page corporate reports, IPO prospectuses, and quarterly decks accepted.</p>
         </div>
 
+        <!-- Selected Files Queue -->
+        <div id="selected-files-list" class="space-y-2 hidden" style="margin-top: 1rem;">
+          <h3 class="font-mono text-xs font-bold text-slate-300 uppercase">QUEUED FOR EXTRACTION:</h3>
+          <div id="files-container" class="space-y-1.5 font-mono text-xs"></div>
+          <button type="button" id="upload-btn" onclick="startUpload()" class="btn-terminal primary w-full justify-center py-2.5 font-mono text-xs mt-2">
+            START BATCH INGESTION PIPELINE
+          </button>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div id="upload-status" class="hidden space-y-3 p-4 rounded bg-black/50 border border-slate-800" style="margin-top: 1rem;">
+          <div class="flex justify-between items-center text-xs font-mono">
+            <span id="upload-status-title" class="font-bold text-white">EXTRACTING ATOMIC FACTS...</span>
+            <span id="upload-status-pct" class="text-amber-400 font-bold">0%</span>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div id="upload-progress-bar" class="bg-amber-400 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+          <p id="upload-status-text" class="text-[11px] font-mono text-slate-400">Initializing PDF parser and table segmenter...</p>
+        </div>
       </div>
     </section>
 
     <!-- ======================================================== -->
-    <!-- VIEW 6: GRAPH SCHEMA & EXPORT -->
+    <!-- VIEW 6: GRAPH SCHEMA EXPORT -->
     <!-- ======================================================== -->
-    <section id="view-export" class="space-y-6 hidden">
-      <div class="glass-panel rounded-2xl p-6 shadow-xl space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <section id="view-export" class="space-y-4 hidden">
+      <div class="terminal-panel" style="padding: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.75rem; margin-bottom: 1rem;">
           <div>
-            <h2 class="text-base font-bold text-white tracking-tight">Structured Knowledge Graph Export</h2>
-            <p class="text-xs text-slate-400 mt-0.5">Machine-readable JSON schema containing documents, facts, and reconciliation links.</p>
+            <h2 class="font-mono text-xs font-bold text-white uppercase tracking-wider">GRAPH SCHEMA EXPORT (JSON-LD)</h2>
+            <p class="text-xs text-slate-400 font-sans mt-0.5">
+              Download complete structured lineage containing all documents, facts, relations, and the 4 required cases.
+            </p>
           </div>
-          <div class="flex items-center space-x-2">
-            <button type="button" onclick="copyExportJson()" class="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-semibold transition">
-              Copy JSON
-            </button>
-            <a href="/api/export" download="knowledge_graph_export.json" class="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition shadow-sm">
-              Download File (.json)
-            </a>
-          </div>
+          <a href="/api/export" download="knowledge_graph_export.json" class="btn-terminal primary font-mono text-xs">
+            DOWNLOAD JSON-LD EXPORT
+          </a>
         </div>
 
-        <!-- Metric Cards -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Total Filings</span>
-            <span class="text-xl font-extrabold text-white font-mono" id="stat-docs">3</span>
-          </div>
-          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Extracted Facts</span>
-            <span class="text-xl font-extrabold text-white font-mono" id="stat-facts">258</span>
-          </div>
-          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Cross-Links</span>
-            <span class="text-xl font-extrabold text-white font-mono" id="stat-rels">47</span>
-          </div>
-          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Contradictions</span>
-            <span class="text-xl font-extrabold text-rose-400 font-mono" id="stat-contras">2</span>
-          </div>
-        </div>
-
-        <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs font-mono text-slate-300 max-h-96 overflow-y-auto custom-scrollbar" id="json-preview">Loading Knowledge Graph JSON...</pre>
+        <pre id="export-preview" class="bg-black/80 text-emerald-400 font-mono text-[11px] p-4 rounded border border-slate-800 overflow-x-auto max-h-[500px]">Loading schema export...</pre>
       </div>
     </section>
 
-  </main>
+  </div>
 
-  <!-- Slide-Over Fact Inspection Drawer -->
-  <div id="fact-drawer-backdrop" class="fixed inset-0 drawer-overlay z-50 hidden transition-opacity" onclick="closeFactDrawer()"></div>
-  <aside id="fact-drawer" class="fixed inset-y-0 right-0 max-w-md w-full bg-slate-900 border-l border-slate-800 p-6 z-50 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col justify-between overflow-y-auto custom-scrollbar">
-    <div class="space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <span class="text-xs font-bold text-blue-400 uppercase tracking-wider">Fact Assertion Detail</span>
-        <button type="button" onclick="closeFactDrawer()" class="text-slate-400 hover:text-white p-1">&times;</button>
+  <!-- Slide-Over Fact Inspection Drawer (from RazorPay ExceptionDrawer.tsx) -->
+  <div id="fact-drawer-overlay" onclick="closeFactDrawer()" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden transition-opacity"></div>
+  <aside id="fact-drawer" style="position: fixed; right: 0; top: 0; height: 100%; width: 100%; max-width: 520px; background: #0C101E; border-left: 1px solid rgba(255, 255, 255, 0.12); padding: 1.5rem; z-index: 95; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); overflow-y: auto; box-shadow: -10px 0 30px rgba(0,0,0,0.7);" class="space-y-4">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.75rem;">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span class="badge badge-amber">FACT_INSPECTOR</span>
+        <span id="drawer-fact-id" class="font-mono text-[11px] text-slate-400">ID</span>
       </div>
-      <div id="fact-drawer-content" class="space-y-4 text-xs">
-        <!-- Injected dynamically -->
-      </div>
+      <button type="button" onclick="closeFactDrawer()" class="text-slate-400 hover:text-white font-mono text-sm px-2 py-1 rounded bg-slate-900 border border-slate-800">&times; ESC</button>
     </div>
-    <div class="pt-4 border-t border-slate-800 flex justify-end">
-      <button type="button" onclick="closeFactDrawer()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold">Close</button>
+
+    <div class="space-y-4">
+      <div>
+        <label class="font-mono text-[10px] uppercase tracking-wider text-slate-400 block mb-1">CLAIM SPECIFICATION</label>
+        <h3 id="drawer-claim" class="text-sm font-bold text-white leading-relaxed"></h3>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+        <div class="p-2.5 rounded bg-black/50 border border-slate-800 font-mono text-xs">
+          <span class="text-[10px] text-slate-400 block mb-0.5">CATEGORY</span>
+          <span id="drawer-category" class="font-semibold text-amber-400 uppercase"></span>
+        </div>
+        <div class="p-2.5 rounded bg-black/50 border border-slate-800 font-mono text-xs">
+          <span class="text-[10px] text-slate-400 block mb-0.5">TOKEN CONFIDENCE</span>
+          <span id="drawer-confidence" class="font-semibold text-emerald-400"></span>
+        </div>
+      </div>
+
+      <div class="p-3 rounded bg-black/50 border border-slate-800 space-y-2">
+        <label class="font-mono text-[10px] uppercase tracking-wider text-slate-400 block">SEMANTIC TRIPLE SPECIFICATION</label>
+        <div class="text-xs space-y-1 font-mono">
+          <div class="flex"><span class="w-24 text-slate-400">SUBJECT:</span><span id="drawer-subject" class="text-white font-semibold"></span></div>
+          <div class="flex"><span class="w-24 text-slate-400">PREDICATE:</span><span id="drawer-predicate" class="text-amber-300"></span></div>
+          <div class="flex"><span class="w-24 text-slate-400">OBJECT:</span><span id="drawer-object" class="text-white font-semibold"></span></div>
+        </div>
+      </div>
+
+      <div class="p-3 rounded bg-black/50 border border-slate-800 space-y-2">
+        <label class="font-mono text-[10px] uppercase tracking-wider text-slate-400 block">SOURCE EVIDENCE LINEAGE</label>
+        <div class="text-xs font-mono text-slate-400 flex items-center space-x-2">
+          <span id="drawer-doc"></span>
+          <span>&bull;</span>
+          <span id="drawer-page"></span>
+        </div>
+        <blockquote id="drawer-quote" class="text-xs text-amber-200/90 font-mono italic p-2.5 rounded bg-slate-900/80 border-l-2 border-amber-400"></blockquote>
+      </div>
+
+      <div class="space-y-2">
+        <label class="font-mono text-[10px] uppercase tracking-wider text-slate-400 block">STRUCTURED ATTRIBUTES</label>
+        <div id="drawer-attributes" class="font-mono text-xs space-y-1"></div>
+      </div>
     </div>
   </aside>
 
-  <!-- Javascript Application Controller -->
+  <!-- Client-Side Terminal Controller -->
   <script>
-    let rawFacts = [];
-    let rawRelationships = [];
-    let rawDocuments = [];
-    let casesBreakdown = null;
-    let selectedCaseIndex = 0;
-    let currentCategoryView = 'corroborations';
-    let selectedFiles = [];
-    let activeFactCategory = 'all';
+    let activeTab = 'cases';
+    let activeCaseIndex = 1;
+    let cachedCasesData = null;
+    let cachedDocuments = [];
+    let cachedFacts = [];
+    let cachedRelationships = [];
+    let queuedFiles = [];
+
+    // Real-time Dual Clocks (from RazorPay TopNav)
+    function updateClocks() {
+      const now = new Date();
+      const utcEl = document.getElementById('clock-utc');
+      const istEl = document.getElementById('clock-ist');
+      if (utcEl) utcEl.innerText = now.toISOString().slice(11, 19) + ' UTC';
+      if (istEl) istEl.innerText = now.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false }) + ' IST';
+    }
+    setInterval(updateClocks, 1000);
+    updateClocks();
+
+    // Keyboard ESC to close drawer (from RazorPay ExceptionDrawer)
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeFactDrawer();
+    });
 
     async function init() {
-      // Parallel fetch via Promise.allSettled for maximum resilience
-      await Promise.allSettled([
-        loadDocuments(),
-        loadCasesBreakdown(),
-        loadFacts(),
-        loadRelationships(),
-        loadExport()
-      ]);
+      try {
+        const [docsRes, factsRes, relsRes, casesRes] = await Promise.allSettled([
+          fetch('/api/documents').then(r => r.json()),
+          fetch('/api/facts').then(r => r.json()),
+          fetch('/api/relationships').then(r => r.json()),
+          fetch('/api/cases/breakdown').then(r => r.json())
+        ]);
+
+        if (docsRes.status === 'fulfilled') cachedDocuments = docsRes.value || [];
+        if (factsRes.status === 'fulfilled') cachedFacts = factsRes.value || [];
+        if (relsRes.status === 'fulfilled') cachedRelationships = relsRes.value || [];
+        if (casesRes.status === 'fulfilled') cachedCasesData = casesRes.value || {};
+
+        hydrateUI();
+      } catch (err) {
+        console.error('Failed to initialize terminal:', err);
+      }
+    }
+
+    function hydrateUI() {
+      const docCount = cachedDocuments.length;
+      const factCount = cachedFacts.length;
+      const relCount = cachedRelationships.length;
+
+      document.getElementById('count-docs-nav').innerText = docCount;
+      document.getElementById('count-facts').innerText = factCount;
+      document.getElementById('count-rels').innerText = relCount;
+
+      document.getElementById('metric-doc-count').innerText = docCount;
+      document.getElementById('metric-fact-count').innerText = factCount;
+      document.getElementById('metric-rel-count').innerText = relCount;
+
+      populateScopeFilters();
+      renderCasesView();
+      renderDocumentsView();
+      renderFacts();
+      renderRelationships('all');
+      loadExportPreview();
+    }
+
+    function populateScopeFilters() {
+      const caseFilter = document.getElementById('case-doc-filter');
+      const factsFilter = document.getElementById('facts-doc-filter');
+      const chipsContainer = document.getElementById('cases-doc-chips');
+
+      if (!caseFilter || !factsFilter || !chipsContainer) return;
+
+      caseFilter.innerHTML = '<option value="">ALL FILINGS (GLOBAL KNOWLEDGE BASE)</option>';
+      factsFilter.innerHTML = '<option value="">ALL FILINGS</option>';
+      chipsContainer.innerHTML = '';
+
+      cachedDocuments.forEach(doc => {
+        const opt1 = document.createElement('option');
+        opt1.value = doc.filename;
+        opt1.innerText = `${doc.filename} (${doc.page_count}p)`;
+        caseFilter.appendChild(opt1);
+
+        const opt2 = document.createElement('option');
+        opt2.value = doc.filename;
+        opt2.innerText = doc.filename;
+        factsFilter.appendChild(opt2);
+
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'btn-terminal text-[11px] font-mono py-0.5 px-2';
+        chip.innerHTML = `<span>${doc.filename}</span> <span class="text-amber-400 font-bold">${doc.page_count}p</span>`;
+        chip.onclick = () => {
+          caseFilter.value = doc.filename;
+          onCaseDocFilterChange();
+        };
+        chipsContainer.appendChild(chip);
+      });
     }
 
     function switchTab(tabId) {
-      const tabs = ['cases', 'documents', 'facts', 'relationships', 'upload', 'export'];
-      tabs.forEach(t => {
+      activeTab = tabId;
+      ['cases', 'documents', 'facts', 'relationships', 'upload', 'export'].forEach(t => {
         const view = document.getElementById(`view-${t}`);
         const btn = document.getElementById(`tab-${t}-btn`);
         if (view) {
           if (t === tabId) {
-            view.style.display = 'block';
             view.classList.remove('hidden');
+            view.style.display = 'block';
           } else {
-            view.style.display = 'none';
             view.classList.add('hidden');
+            view.style.display = 'none';
           }
         }
         if (btn) {
           if (t === tabId) {
-            btn.className = 'nav-tab active px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-600 shadow-sm transition whitespace-nowrap flex items-center space-x-2';
+            btn.classList.add('primary');
           } else {
-            btn.className = 'nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-900 transition whitespace-nowrap flex items-center space-x-2';
+            btn.classList.remove('primary');
           }
         }
       });
     }
 
-    async function loadDocuments() {
+    async function onCaseDocFilterChange() {
+      const select = document.getElementById('case-doc-filter');
+      const docId = select ? select.value : '';
       try {
-        const res = await fetch('/api/documents');
-        rawDocuments = await res.json();
-        
-        const count = rawDocuments.length;
-        const navCount = document.getElementById('count-docs-nav');
-        if (navCount) navCount.innerText = count;
-        
-        const ribbonDocs = document.getElementById('ribbon-docs');
-        if (ribbonDocs) ribbonDocs.innerText = `${count} Documents`;
+        const url = docId ? `/api/cases/breakdown?doc_id=${encodeURIComponent(docId)}` : '/api/cases/breakdown';
+        const res = await fetch(url);
+        cachedCasesData = await res.json();
+        renderCasesView();
+      } catch (e) {
+        console.error('Error filtering cases:', e);
+      }
+    }
 
-        const ingCount = document.getElementById('ingested-docs-count');
-        if (ingCount) ingCount.innerText = `${count} documents`;
-
-        // Update case document filter dropdown
-        const caseDocSelect = document.getElementById('case-doc-filter');
-        if (caseDocSelect) {
-          const prevVal = caseDocSelect.value;
-          caseDocSelect.innerHTML = '<option value="">All Documents (Global Knowledge Base)</option>' +
-            rawDocuments.map(d => `<option value="${d.id}">${d.filename} (${d.page_count} pgs)</option>`).join('');
-          if (prevVal) caseDocSelect.value = prevVal;
+    function selectCaseTab(index) {
+      activeCaseIndex = index;
+      for (let i = 1; i <= 4; i++) {
+        const card = document.getElementById(`case-card-${i}`);
+        if (card) {
+          if (i === index) card.classList.add('active-case-card');
+          else card.classList.remove('active-case-card');
         }
+      }
+      renderCasesView();
+    }
 
-        // Update facts explorer document dropdown
-        const docSelect = document.getElementById('doc-filter');
-        if (docSelect) {
-          docSelect.innerHTML = '<option value="all">All Documents</option>' +
-            rawDocuments.map(d => `<option value="${d.filename}">${d.filename}</option>`).join('');
-        }
+    function renderCasesView() {
+      if (!cachedCasesData) return;
 
-        // Update active docs banner on the Overview tab
-        const banner = document.getElementById('active-docs-banner');
-        if (banner) {
-          banner.innerHTML = rawDocuments.map(d => `
-            <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between text-xs group hover:border-slate-700 transition">
-              <div class="flex items-center space-x-2.5 min-w-0">
-                <div class="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-[10px]">
-                  PDF
-                </div>
-                <div class="min-w-0 truncate">
-                  <div class="font-bold text-slate-200 truncate text-[11px]" title="${d.filename}">${d.filename}</div>
-                  <div class="text-[10px] text-slate-500">${d.page_count} Pages &bull; Indexed</div>
-                </div>
-              </div>
-              <button type="button" onclick="inspectDocCases('${d.id}')" class="ml-2 px-2 py-1 rounded bg-slate-900 hover:bg-blue-600 text-slate-400 hover:text-white text-[10px] font-semibold border border-slate-800 transition whitespace-nowrap">Filter</button>
-            </div>
-          `).join('');
-        }
+      const corrobs = cachedCasesData.corroborations || [];
+      const contras = cachedCasesData.contradictions || [];
+      const recons = cachedCasesData.reconciliations || [];
+      const limits = cachedCasesData.limitations || [];
 
-        // Update detailed documents showcase grid
-        const grid = document.getElementById('documents-showcase-grid');
-        if (grid) {
-          grid.innerHTML = rawDocuments.map((d, i) => `
-            <div class="glass-panel rounded-2xl p-5 shadow-xl space-y-4 hover:border-slate-700 transition flex flex-col justify-between">
-              <div class="space-y-3">
-                <div class="flex items-center justify-between">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                    Filing #${i + 1}
-                  </span>
-                  <span class="text-[11px] text-slate-500 font-mono">${(d.upload_time || '').split('T')[0]}</span>
+      document.getElementById('case-count-1').innerText = `${corrobs.length} INSTANCES`;
+      document.getElementById('case-count-2').innerText = `${contras.length} INSTANCES`;
+      document.getElementById('case-count-3').innerText = `${recons.length} INSTANCES`;
+      document.getElementById('case-count-4').innerText = `${limits.length} DETECTED`;
+
+      const featured = cachedCasesData.featured_cases || [];
+      const currentFeatured = featured.find(c => c.case_number === activeCaseIndex) || featured[0];
+
+      renderSpotlight(currentFeatured);
+      renderCatalog(activeCaseIndex, { corrobs, contras, recons, limits });
+    }
+
+    function renderSpotlight(c) {
+      const arena = document.getElementById('case-spotlight-arena');
+      if (!arena || !c) return;
+
+      if (c.case_number === 4) {
+        const fa = c.fact_a;
+        arena.innerHTML = `
+          <div class="terminal-panel" style="padding: 1.35rem; background: linear-gradient(135deg, rgba(19, 26, 48, 0.75) 0%, rgba(8, 11, 22, 0.85) 100%); border: 1px solid rgba(56, 189, 248, 0.3); border-left: 4px solid #38BDF8; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); display: flex; align-items: center; justify-content: center; color: #38BDF8; box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
                 <div>
-                  <h4 class="font-bold text-sm text-white leading-snug break-words">${d.filename}</h4>
-                  <p class="text-xs text-slate-400 mt-1">Ground-truth filing indexed with page-indexed text & table chunks.</p>
-                </div>
-                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80 text-xs">
-                  <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                    <span class="text-[10px] font-bold text-slate-500 block">Total Pages:</span>
-                    <span class="text-sm font-extrabold text-white font-mono">${d.page_count}</span>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="font-mono text-sm font-bold text-white uppercase">SCENARIO // 04 SPOTLIGHT: ${c.case_label}</span>
+                    <span class="badge badge-sapphire" style="font-size: 0.65rem;">LAYOUT CHALLENGE</span>
                   </div>
-                  <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                    <span class="text-[10px] font-bold text-slate-500 block">Index Status:</span>
-                    <span class="text-xs font-bold text-emerald-400">Verified &bull; Active</span>
-                  </div>
+                  <p class="font-mono text-[11px] text-slate-400 mt-0.5">${fa.doc_filename} (Page ${fa.page_number})</p>
                 </div>
               </div>
-              <div class="flex items-center space-x-2 pt-3 border-t border-slate-800/80">
-                <button type="button" onclick="inspectDocCases('${d.id}')" class="flex-1 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition text-center shadow-sm">
-                  View Cases
-                </button>
-                <button type="button" onclick="inspectDocFacts('${d.filename}')" class="flex-1 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-semibold transition text-center">
-                  View Facts
-                </button>
+              <span class="badge badge-sapphire font-mono">Confidence: ${(fa.confidence * 100).toFixed(0)}%</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+              <div style="background: rgba(12, 16, 30, 0.9); padding: 1rem; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px;">
+                <span style="font-size: 0.7rem; font-family: var(--font-mono); color: #38BDF8; font-weight: 700; text-transform: uppercase;">EXTRACTED ATOMIC CLAIM</span>
+                <p style="font-size: 0.82rem; font-weight: 700; color: #FFFFFF; margin-top: 0.35rem; line-height: 1.4;">${fa.claim}</p>
+              </div>
+              <div style="background: rgba(12, 16, 30, 0.9); padding: 1rem; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px;">
+                <span style="font-size: 0.7rem; font-family: var(--font-mono); color: #F5D061; font-weight: 700; text-transform: uppercase;">GROUNDED RAW SOURCE TOKEN</span>
+                <blockquote style="font-size: 0.8rem; font-family: var(--font-mono); color: #FEF08A; margin-top: 0.35rem; padding: 0.4rem 0.65rem; background: rgba(5, 7, 17, 0.75); border-left: 2px solid #F5D061; border-radius: 4px;">
+                  "${fa.source_quote}"
+                </blockquote>
               </div>
             </div>
-          `).join('');
-        }
 
-        // Update list on upload tab
-        const listDiv = document.getElementById('ingested-docs-list');
-        if (listDiv) {
-          if (!rawDocuments.length) {
-            listDiv.innerHTML = '<div class="text-xs text-slate-500 italic p-3 rounded-lg bg-slate-950 border border-slate-800">No documents ingested. Upload filings above.</div>';
-          } else {
-            listDiv.innerHTML = rawDocuments.map(d => `
-              <div class="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-                <div class="flex items-center space-x-3">
-                  <span class="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-xs">PDF</span>
-                  <div>
-                    <div class="font-bold text-white">${d.filename}</div>
-                    <div class="text-slate-400 text-[11px]">${d.page_count} pages &bull; Indexed in knowledge store</div>
-                  </div>
-                </div>
-                <span class="text-[11px] text-slate-500 font-mono">${(d.upload_time || '').split('T')[0]}</span>
-              </div>
-            `).join('');
-          }
-        }
-      } catch (e) {
-        console.error('Failed to load documents', e);
-      }
-    }
-
-    function inspectDocCases(docId) {
-      const select = document.getElementById('case-doc-filter');
-      if (select) {
-        select.value = docId;
-        onCaseDocFilterChange();
-      }
-      switchTab('cases');
-    }
-
-    function inspectDocFacts(filename) {
-      const select = document.getElementById('doc-filter');
-      if (select) {
-        select.value = filename;
-        filterFacts();
-      }
-      switchTab('facts');
-    }
-
-    async function onCaseDocFilterChange() {
-      const docId = document.getElementById('case-doc-filter').value;
-      await loadCasesBreakdown(docId);
-    }
-
-    async function loadCasesBreakdown(docId = null) {
-      try {
-        let url = '/api/cases/breakdown';
-        if (docId) url += `?doc_id=${encodeURIComponent(docId)}`;
-        const res = await fetch(url);
-        casesBreakdown = await res.json();
-
-        const counts = casesBreakdown.counts || {};
-        const nCorrob = counts.corroborations ?? (casesBreakdown.corroborations ? casesBreakdown.corroborations.length : 0);
-        const nContra = counts.contradictions ?? (casesBreakdown.contradictions ? casesBreakdown.contradictions.length : 0);
-        const nRec = counts.reconciliations ?? (casesBreakdown.reconciliations ? casesBreakdown.reconciliations.length : 0);
-        const nLim = counts.limitations ?? (casesBreakdown.limitations ? casesBreakdown.limitations.length : 0);
-
-        const bCorrob = document.getElementById('badge-corrobs-count');
-        if (bCorrob) bCorrob.innerText = `${nCorrob} instances`;
-        const bContra = document.getElementById('badge-contras-count');
-        if (bContra) bContra.innerText = `${nContra} instances`;
-        const bRec = document.getElementById('badge-recs-count');
-        if (bRec) bRec.innerText = `${nRec} instances`;
-        const bLim = document.getElementById('badge-limits-count');
-        if (bLim) bLim.innerText = `${nLim} instances`;
-
-        renderSpotlightArena();
-        renderCategoryInstances();
-      } catch (e) {
-        console.error('Failed to load cases breakdown', e);
-      }
-    }
-
-    function selectCaseByIndex(index) {
-      selectedCaseIndex = index;
-      for (let i = 0; i < 4; i++) {
-        const btn = document.getElementById(`case-btn-${i}`);
-        if (btn) {
-          if (i === index) {
-            btn.classList.add('active-case-card');
-          } else {
-            btn.classList.remove('active-case-card');
-          }
-        }
-      }
-      renderSpotlightArena();
-    }
-
-    function renderSpotlightArena() {
-      const arena = document.getElementById('spotlight-display-arena');
-      if (!arena) return;
-
-      if (!casesBreakdown || !casesBreakdown.featured_cases || casesBreakdown.featured_cases.length === 0) {
-        arena.innerHTML = '<div class="p-8 text-center text-slate-500 text-xs">No cases match the selected filter.</div>';
+            <div style="padding: 0.9rem; background: rgba(5, 7, 17, 0.7); border: 1px solid rgba(56, 189, 248, 0.2); border-left: 3px solid #38BDF8; border-radius: 4px;">
+              <span class="font-mono text-[10px] uppercase text-sky-400 font-bold block mb-1">SYSTEM AUDIT RATIONALE & MITIGATION ROADMAP</span>
+              <p class="text-xs text-slate-300 leading-relaxed whitespace-pre-line font-sans">${c.explanation}</p>
+            </div>
+          </div>
+        `;
         return;
       }
 
-      const caseItem = casesBreakdown.featured_cases[selectedCaseIndex] || casesBreakdown.featured_cases[0];
-      const fa = caseItem.fact_a;
-      const fb = caseItem.fact_b;
-      const rel = caseItem.relationship;
-
-      let badgeColor = 'bg-blue-500/10 text-blue-400 border-blue-500/30';
-      let statusIcon = 'Verified Consensus';
-      if (caseItem.case_label.includes('Corroborat')) {
-        badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
-        statusIcon = 'Cross-Filing Consensus';
-      } else if (caseItem.case_label.includes('Contradiction')) {
-        badgeColor = 'bg-rose-500/10 text-rose-400 border-rose-500/30';
-        statusIcon = 'Reported Variance Conflict';
-      } else if (caseItem.case_label.includes('Reconciliation')) {
-        badgeColor = 'bg-amber-500/10 text-amber-400 border-amber-500/30';
-        statusIcon = 'Contextually Reconciled';
-      } else if (caseItem.case_label.includes('Limitation') || caseItem.case_label.includes('Failure')) {
-        badgeColor = 'bg-purple-500/10 text-purple-400 border-purple-500/30';
-        statusIcon = 'Document Layout Challenge';
-      }
+      const fa = c.fact_a;
+      const fb = c.fact_b;
+      const rel = c.relationship || {};
+      
+      let badgeStyle = 'badge-emerald';
+      let borderLeft = '#10B981';
+      let accentColor = '#10B981';
+      if (c.case_number === 2) { badgeStyle = 'badge-red'; borderLeft = '#F43F5E'; accentColor = '#F43F5E'; }
+      if (c.case_number === 3) { badgeStyle = 'badge-amber'; borderLeft = '#F5D061'; accentColor = '#F5D061'; }
 
       arena.innerHTML = `
-        <!-- Top Scenario Status Bar -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
-          <div class="flex items-center space-x-3">
-            <span class="w-8 h-8 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center font-extrabold text-xs text-slate-200 font-mono">0${caseItem.case_number}</span>
-            <div>
-              <div class="flex items-center space-x-2">
-                <h3 class="font-bold text-base text-white">${caseItem.case_label}</h3>
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${badgeColor}">
-                  ${statusIcon}
-                </span>
+        <div class="terminal-panel" style="padding: 1.35rem; background: linear-gradient(135deg, rgba(19, 26, 48, 0.75) 0%, rgba(8, 11, 22, 0.85) 100%); border: 1px solid rgba(255, 255, 255, 0.1); border-left: 4px solid ${borderLeft}; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(245, 208, 97, 0.15); border: 1px solid rgba(245, 208, 97, 0.4); display: flex; align-items: center; justify-content: center; color: #F5D061; box-shadow: 0 0 12px rgba(245, 208, 97, 0.25);">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
               </div>
-              <p class="text-xs text-slate-400 mt-0.5">High-confidence analytical demonstration grounded in verified source filings.</p>
+              <div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span class="font-mono text-sm font-bold text-white uppercase">SCENARIO // 0${c.case_number} SPOTLIGHT: ${c.case_label}</span>
+                  <span class="badge ${badgeStyle}" style="font-size: 0.65rem;">AUDITED PAIR</span>
+                </div>
+                <p class="font-mono text-[11px] text-slate-400 mt-0.5">Two-Signal Candidate Pairing &bull; Vector Cosine &ge; 0.72 &bull; Entity Overlap</p>
+              </div>
             </div>
-          </div>
-          <div class="text-xs text-slate-400 font-mono bg-slate-950 px-3.5 py-1.5 rounded-xl border border-slate-800 flex items-center space-x-2 self-start sm:self-auto">
-            <span>Confidence Index:</span>
-            <span class="text-emerald-400 font-bold">${rel ? (rel.confidence * 100).toFixed(0) : (fa && fa.confidence ? (fa.confidence * 100).toFixed(0) : 100)}%</span>
-          </div>
-        </div>
-
-        <!-- Evidence Side-by-Side Diff Arena -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          
-          <!-- Source Filing A Card -->
-          <div class="bg-slate-950/80 border border-slate-800/90 rounded-2xl p-5 space-y-3 relative overflow-hidden">
-            <div class="flex items-center justify-between text-xs">
-              <span class="font-bold text-blue-400 uppercase tracking-wider text-[10px] flex items-center space-x-1.5">
-                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                <span>Source Filing A</span>
-              </span>
-              <span class="px-2.5 py-0.5 rounded-full bg-slate-900 text-slate-300 border border-slate-800 font-mono text-[11px]">
-                ${fa ? fa.doc_filename : 'Document A'} &bull; Page ${fa ? fa.page_number : 'N/A'}
-              </span>
-            </div>
-
-            <div class="bg-slate-900/70 p-3.5 rounded-xl border border-slate-800/80">
-              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Extracted Assertion:</span>
-              <p class="text-sm font-semibold text-white leading-snug">${fa ? fa.claim : 'No assertion statement available.'}</p>
-            </div>
-
-            <div class="p-3.5 rounded-xl bg-slate-900/40 border border-slate-800/60 text-xs">
-              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                Verbatim Grounding Quote:
-              </span>
-              <p class="text-slate-300 italic leading-relaxed text-xs pl-2.5 border-l-2 border-blue-500/60 font-serif">
-                "${fa ? fa.source_quote : ''}"
-              </p>
-            </div>
+            <span class="badge badge-amber font-mono">Confidence: ${(rel.confidence * 100 || 95).toFixed(0)}%</span>
           </div>
 
-          <!-- Source Filing B Card (or Spatial Challenge Explanation) -->
-          ${fb ? `
-          <div class="bg-slate-950/80 border border-slate-800/90 rounded-2xl p-5 space-y-3 relative overflow-hidden">
-            <div class="flex items-center justify-between text-xs">
-              <span class="font-bold text-indigo-400 uppercase tracking-wider text-[10px] flex items-center space-x-1.5">
-                <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-                <span>Source Filing B</span>
-              </span>
-              <span class="px-2.5 py-0.5 rounded-full bg-slate-900 text-slate-300 border border-slate-800 font-mono text-[11px]">
-                ${fb.doc_filename} &bull; Page ${fb.page_number}
-              </span>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <!-- Filing Alpha -->
+            <div style="background: rgba(12, 16, 30, 0.9); padding: 1rem; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-family: var(--font-mono); font-size: 0.7rem; margin-bottom: 0.35rem;">
+                <span style="color: #E5B869; font-weight: 700;">FILING // ALPHA</span>
+                <span style="color: #94A3B8;">PAGE ${fa.page_number}</span>
+              </div>
+              <p style="font-size: 0.82rem; font-weight: 700; color: #FFFFFF; line-height: 1.4;">${fa.claim}</p>
+              <blockquote style="font-size: 0.75rem; font-family: var(--font-mono); color: #94A3B8; margin-top: 0.5rem; padding: 0.4rem 0.65rem; background: rgba(5, 7, 17, 0.75); border-left: 2px solid var(--border-hairline); border-radius: 4px;">
+                "${fa.source_quote}"
+              </blockquote>
+              <span class="font-mono text-[10px] text-slate-500 block truncate mt-1.5">${fa.doc_filename}</span>
             </div>
 
-            <div class="bg-slate-900/70 p-3.5 rounded-xl border border-slate-800/80">
-              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Extracted Assertion:</span>
-              <p class="text-sm font-semibold text-white leading-snug">${fb.claim}</p>
-            </div>
-
-            <div class="p-3.5 rounded-xl bg-slate-900/40 border border-slate-800/60 text-xs">
-              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                Verbatim Grounding Quote:
-              </span>
-              <p class="text-slate-300 italic leading-relaxed text-xs pl-2.5 border-l-2 border-indigo-500/60 font-serif">
+            <!-- Filing Beta -->
+            <div style="background: rgba(12, 16, 30, 0.9); padding: 1rem; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-family: var(--font-mono); font-size: 0.7rem; margin-bottom: 0.35rem;">
+                <span style="color: #E5B869; font-weight: 700;">FILING // BETA</span>
+                <span style="color: #94A3B8;">PAGE ${fb.page_number}</span>
+              </div>
+              <p style="font-size: 0.82rem; font-weight: 700; color: #FFFFFF; line-height: 1.4;">${fb.claim}</p>
+              <blockquote style="font-size: 0.75rem; font-family: var(--font-mono); color: #94A3B8; margin-top: 0.5rem; padding: 0.4rem 0.65rem; background: rgba(5, 7, 17, 0.75); border-left: 2px solid var(--border-hairline); border-radius: 4px;">
                 "${fb.source_quote}"
-              </p>
+              </blockquote>
+              <span class="font-mono text-[10px] text-slate-500 block truncate mt-1.5">${fb.doc_filename}</span>
             </div>
           </div>
-          ` : `
-          <div class="bg-purple-950/20 border border-purple-500/30 rounded-2xl p-5 space-y-3 flex flex-col justify-center text-xs">
-            <span class="font-bold text-purple-300 uppercase tracking-wider text-[10px] flex items-center space-x-1.5">
-              <span class="w-2 h-2 rounded-full bg-purple-400"></span>
-              <span>Spatial Bounding & Tabular Stream Challenge</span>
-            </span>
-            <p class="text-slate-300 text-xs leading-relaxed">
-              Standard PDF parsers flatten two-dimensional matrices into continuous 1D text streams, dropping visual column boundaries. Multi-column presentation slides lose explicit spatial attachment between headers and numeric values.
-            </p>
-            <div class="p-3 bg-purple-900/20 border border-purple-500/20 rounded-xl text-purple-200 text-[11px]">
-              <strong>Engineering Protocol:</strong> Integrate LayoutLMv3 2D spatial coordinate tracking or multimodal Vision-Language rasterization (Gemini Vision) to anchor un-nested headers directly to cell coordinates.
-            </div>
+
+          <div style="padding: 0.9rem; background: rgba(5, 7, 17, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-left: 3px solid ${borderLeft}; border-radius: 4px;">
+            <span class="font-mono text-[10px] uppercase text-amber-400 font-bold block mb-1">EVIDENCE RECONCILIATION MEMO & AUDITOR RATIONALE</span>
+            <p class="text-xs text-slate-300 leading-relaxed font-sans">${c.explanation}</p>
           </div>
-          `}
-
-        </div>
-
-        <!-- Analytical Resolution Memo -->
-        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800/90 space-y-1.5">
-          <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-400 flex items-center space-x-1.5">
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span>Evidence Reconciliation Memo & Auditor Rationale:</span>
-          </span>
-          <p class="text-xs text-slate-300 leading-relaxed font-normal">${caseItem.explanation}</p>
         </div>
       `;
     }
 
-    function switchCategoryView(category) {
-      currentCategoryView = category;
-      ['corroborations', 'contradictions', 'reconciliations', 'limitations'].forEach(c => {
-        const btn = document.getElementById(`cat-btn-${c}`);
-        if (btn) {
-          if (c === category) {
-            btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white shadow-sm transition';
-          } else {
-            btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition';
-          }
-        }
-      });
+    function renderCatalog(scenarioIdx, data) {
+      const container = document.getElementById('catalog-items-container');
+      const title = document.getElementById('catalog-title');
+      const sub = document.getElementById('catalog-subtitle');
+      const countBadge = document.getElementById('catalog-count-badge');
+      if (!container) return;
 
-      const titleMap = {
-        'corroborations': 'All Discovered Corroborations',
-        'contradictions': 'All Discovered Contradictions',
-        'reconciliations': 'All Discovered Contextual Reconciliations',
-        'limitations': 'Identified Layout Limitations & Edge Cases'
-      };
-      const titleEl = document.getElementById('category-drawer-title');
-      if (titleEl) titleEl.innerText = titleMap[category];
-      renderCategoryInstances();
-    }
+      let items = [];
+      if (scenarioIdx === 1) {
+        items = data.corrobs;
+        title.innerText = 'ALL CORROBORATION AUDITS (MUTUAL CONSENSUS)';
+        sub.innerText = 'Cross-document pairs confirming identical numerical values, metrics, or governance roles.';
+        countBadge.className = 'badge badge-emerald';
+        countBadge.innerText = `${items.length} Records`;
+      } else if (scenarioIdx === 2) {
+        items = data.contras;
+        title.innerText = 'ALL CONTRADICTION AUDITS (REPORTED VARIANCES)';
+        sub.innerText = 'Pairs exhibiting conflicting values or divergent states requiring auditing clarification.';
+        countBadge.className = 'badge badge-red';
+        countBadge.innerText = `${items.length} Records`;
+      } else if (scenarioIdx === 3) {
+        items = data.recons;
+        title.innerText = 'ALL CONTEXTUAL RECONCILIATIONS (SCOPE / TEMPORAL SHIFTS)';
+        sub.innerText = 'Apparent discrepancies cleanly resolved by disclosure timing, accounting standards, or scope adjustments.';
+        countBadge.className = 'badge badge-amber';
+        countBadge.innerText = `${items.length} Records`;
+      } else {
+        items = data.limits;
+        title.innerText = 'ALL IDENTIFIED EXTRACTION CHALLENGES & LAYOUT LIMITATIONS';
+        sub.innerText = 'Unanchored chart tokens or multi-column layout challenges with technical mitigation steps.';
+        countBadge.className = 'badge badge-sapphire';
+        countBadge.innerText = `${items.length} Records`;
+      }
 
-    function renderCategoryInstances() {
-      const container = document.getElementById('category-instances-container');
-      if (!container || !casesBreakdown) return;
+      if (!items || items.length === 0) {
+        container.innerHTML = '<div style="padding: 2rem; text-align: center; color: #64748B; font-family: var(--font-mono); font-size: 0.75rem;">NO INSTANCES DISCOVERED FOR CURRENT SCOPE</div>';
+        return;
+      }
 
-      if (currentCategoryView === 'limitations') {
-        const items = casesBreakdown.limitations || [];
-        if (!items.length) {
-          container.innerHTML = '<div class="text-xs text-slate-500 italic p-4 text-center">No layout limitations recorded.</div>';
-          return;
-        }
-        container.innerHTML = items.map((lim, i) => `
-          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-2">
-            <div class="flex justify-between items-center">
-              <span class="text-[11px] font-bold text-purple-400">#0${i + 1} &bull; Spatial Challenge</span>
-              <span class="text-[11px] text-slate-400 font-mono">Confidence: ${(lim.confidence * 100).toFixed(0)}%</span>
+      if (scenarioIdx === 4) {
+        container.innerHTML = items.map((item, i) => `
+          <div class="terminal-panel" style="padding: 0.9rem; margin-bottom: 0.65rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 0.4rem;">
+              <span style="color: #38BDF8; font-weight: 700;">CHALLENGE #${i+1}</span>
+              <span style="color: #94A3B8;">${item.fact.doc_filename} (p. ${item.fact.page_number})</span>
             </div>
-            <div class="font-semibold text-white text-xs">${lim.fact.claim}</div>
-            <div class="text-slate-400 text-[11px] italic bg-slate-900 p-2.5 rounded-lg border border-slate-800/80">"${lim.fact.source_quote}"</div>
-            <div class="text-[11px] text-slate-400 border-t border-slate-800/80 pt-2"><strong class="text-slate-300">Technical Analysis:</strong> ${lim.limitation_analysis}</div>
+            <h4 style="font-size: 0.8rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.4rem;">${item.fact.claim}</h4>
+            <div style="padding: 0.5rem 0.75rem; background: rgba(5, 7, 17, 0.7); border-left: 2px solid #38BDF8; font-family: var(--font-mono); font-size: 0.72rem; color: #CBD5E1; border-radius: 4px;">
+              ${item.limitation_analysis}
+            </div>
           </div>
         `).join('');
         return;
       }
 
-      const items = casesBreakdown[currentCategoryView] || [];
-      if (!items.length) {
-        container.innerHTML = '<div class="text-xs text-slate-500 italic p-4 text-center">No instances found under current filter.</div>';
-        return;
-      }
-
       container.innerHTML = items.map((item, i) => `
-        <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-2 hover:border-slate-700 transition">
-          <div class="flex justify-between items-center">
-            <span class="text-[11px] font-bold text-blue-400">#0${i + 1} &bull; ${item.relationship_type.replace('_', ' ').toUpperCase()}</span>
-            <span class="text-[11px] text-slate-400 font-mono">Confidence: ${(item.confidence * 100).toFixed(0)}% &bull; Signal: ${item.score}</span>
+        <div class="terminal-panel" style="padding: 0.9rem; margin-bottom: 0.65rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 0.5rem;">
+            <span style="color: #F5D061; font-weight: 700;">RECORD #${i+1}</span>
+            <span style="color: #10B981; font-weight: 600;">${(item.confidence * 100).toFixed(0)}% CONF.</span>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px]">
-            <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800/70">
-              <span class="text-[10px] font-bold text-slate-500 block mb-0.5">Doc A (${item.fact_a ? item.fact_a.doc_filename : 'A'}, Pg ${item.fact_a ? item.fact_a.page_number : ''}):</span>
-              <span class="text-slate-200 font-medium">${item.fact_a ? item.fact_a.claim : ''}</span>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.75rem; margin-bottom: 0.5rem;">
+            <div style="padding: 0.65rem; background: rgba(5, 7, 17, 0.65); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 4px;">
+              <span style="font-size: 0.68rem; font-family: var(--font-mono); color: #64748B; display: block; margin-bottom: 0.2rem;">${item.fact_a.doc_filename} (p.${item.fact_a.page_number})</span>
+              <span style="font-size: 0.78rem; color: #F8FAFC;">${item.fact_a.claim}</span>
             </div>
-            <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800/70">
-              <span class="text-[10px] font-bold text-slate-500 block mb-0.5">Doc B (${item.fact_b ? item.fact_b.doc_filename : 'B'}, Pg ${item.fact_b ? item.fact_b.page_number : ''}):</span>
-              <span class="text-slate-200 font-medium">${item.fact_b ? item.fact_b.claim : ''}</span>
+            <div style="padding: 0.65rem; background: rgba(5, 7, 17, 0.65); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 4px;">
+              <span style="font-size: 0.68rem; font-family: var(--font-mono); color: #64748B; display: block; margin-bottom: 0.2rem;">${item.fact_b.doc_filename} (p.${item.fact_b.page_number})</span>
+              <span style="font-size: 0.78rem; color: #F8FAFC;">${item.fact_b.claim}</span>
             </div>
           </div>
-          <div class="text-[11px] text-slate-400 border-t border-slate-800/80 pt-2"><strong class="text-slate-300">Auditor Rationale:</strong> ${item.explanation}</div>
+          <p style="font-size: 0.75rem; color: #94A3B8; font-style: italic; border-left: 2px solid rgba(245, 208, 97, 0.5); padding-left: 0.5rem;">
+            ${item.explanation}
+          </p>
         </div>
       `).join('');
     }
 
-    async function loadFacts() {
-      try {
-        const res = await fetch('/api/facts');
-        rawFacts = await res.json();
-        
-        const fCount = document.getElementById('count-facts');
-        if (fCount) fCount.innerText = rawFacts.length;
+    function renderDocumentsView() {
+      const container = document.getElementById('documents-grid');
+      if (!container) return;
 
-        const ribFacts = document.getElementById('ribbon-facts');
-        if (ribFacts) ribFacts.innerText = `${rawFacts.length} Facts`;
-        
-        const hStats = document.getElementById('header-stats');
-        if (hStats) hStats.innerText = `${rawDocuments.length} Filings • ${rawFacts.length} Facts • ${rawRelationships.length} Reconciliations`;
-        
-        filterFacts();
-      } catch (e) {
-        console.error('Failed to load facts', e);
+      container.innerHTML = cachedDocuments.map(doc => `
+        <div class="terminal-panel" style="padding: 1.15rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <span class="badge badge-amber" style="font-size: 0.65rem;">INDEXED FILING</span>
+            <span class="font-mono text-xs text-amber-400 font-bold">${doc.page_count} Pages</span>
+          </div>
+          <h3 class="font-mono text-xs font-bold text-white truncate" title="${doc.filename}">${doc.filename}</h3>
+          <span class="font-mono text-[10px] text-slate-500 block mt-0.5">SHA256: ${doc.id ? doc.id.substring(0, 16) : 'VERIFIED'}...</span>
+          <div style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.72rem;">
+            <button type="button" onclick="scopeToDoc('${doc.filename}')" style="color: #F5D061; font-weight: 700; background: none; border: none; cursor: pointer;">VIEW CASES &rarr;</button>
+            <button type="button" onclick="filterFactsByDoc('${doc.filename}')" style="color: #94A3B8; background: none; border: none; cursor: pointer;">EXPLORE FACTS</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function scopeToDoc(filename) {
+      switchTab('cases');
+      const select = document.getElementById('case-doc-filter');
+      if (select) {
+        select.value = filename;
+        onCaseDocFilterChange();
       }
     }
 
-    function filterByCategory(cat) {
-      activeFactCategory = cat;
-      ['all', 'financial', 'operational', 'strategic', 'personnel'].forEach(c => {
-        const btn = document.getElementById(`cat-pill-${c}`);
-        if (btn) {
-          if (c === cat) {
-            btn.className = 'cat-pill pill-active px-3 py-1 rounded-lg font-semibold bg-blue-600 text-white border border-blue-500 transition';
-          } else {
-            btn.className = 'cat-pill px-3 py-1 rounded-lg font-semibold bg-slate-900 text-slate-300 hover:text-white border border-slate-800 transition';
-          }
-        }
-      });
-      filterFacts();
+    function filterFactsByDoc(filename) {
+      switchTab('facts');
+      const select = document.getElementById('facts-doc-filter');
+      if (select) {
+        select.value = filename;
+        filterFacts();
+      }
     }
 
     function filterFacts() {
-      const q = (document.getElementById('fact-search') ? document.getElementById('fact-search').value : '').toLowerCase().trim();
-      const doc = document.getElementById('doc-filter') ? document.getElementById('doc-filter').value : 'all';
-
-      const filtered = rawFacts.filter(f => {
-        const matchesDoc = doc === 'all' || f.doc_filename === doc;
-        const matchesCat = activeFactCategory === 'all' || (f.category || '').toLowerCase() === activeFactCategory;
-        const matchesQuery = !q ||
-          (f.claim && f.claim.toLowerCase().includes(q)) ||
-          (f.subject && f.subject.toLowerCase().includes(q)) ||
-          (f.entities && f.entities.some(e => e.toLowerCase().includes(q)));
-        return matchesDoc && matchesCat && matchesQuery;
-      });
-
-      const counter = document.getElementById('facts-counter-text');
-      if (counter) counter.innerText = `Showing ${filtered.length} of ${rawFacts.length} verified facts`;
-      
+      const q = (document.getElementById('facts-search').value || '').toLowerCase().trim();
+      const docFilter = (document.getElementById('facts-doc-filter').value || '').trim();
       const container = document.getElementById('facts-container');
       if (!container) return;
 
-      if (!filtered.length) {
-        container.innerHTML = '<div class="col-span-2 p-8 text-center text-slate-500 text-xs">No facts match your search criteria.</div>';
+      const filtered = cachedFacts.filter(f => {
+        const matchesDoc = !docFilter || f.doc_filename === docFilter;
+        const matchesQuery = !q || (f.claim && f.claim.toLowerCase().includes(q)) || (f.subject && f.subject.toLowerCase().includes(q));
+        return matchesDoc && matchesQuery;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div style="grid-column: 1 / -1; padding: 2.5rem; text-align: center; color: #64748B; font-family: var(--font-mono); font-size: 0.75rem;">NO FACTS MATCH YOUR QUERY CRITERIA</div>';
         return;
       }
 
@@ -1122,317 +1161,239 @@ def get_dashboard_html() -> str:
         return text.replace(new RegExp(escaped, 'gi'), match => `<span class="mark-highlight">${match}</span>`);
       }
 
-      container.innerHTML = filtered.slice(0, 100).map((f, i) => `
-        <div onclick="openFactDrawer('${f.id}')" class="bg-slate-900 border border-slate-800 hover:border-blue-500/50 rounded-xl p-4 shadow-md space-y-2.5 transition cursor-pointer group">
-          <div class="flex justify-between items-center text-xs">
-            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-blue-400 border border-slate-700">${f.category || 'General'}</span>
-            <span class="text-[11px] font-mono text-emerald-400 font-semibold">${(f.confidence * 100).toFixed(0)}% Conf.</span>
+      container.innerHTML = filtered.slice(0, 100).map(f => `
+        <div onclick="openFactDrawer('${f.id}')" class="terminal-panel cursor-pointer" style="padding: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-family: var(--font-mono); font-size: 0.72rem; margin-bottom: 0.4rem;">
+            <span class="badge" style="background: rgba(255, 255, 255, 0.05); color: #94A3B8; border-color: rgba(255, 255, 255, 0.15); font-size: 0.62rem;">${f.category || 'General'}</span>
+            <span style="color: #10B981; font-weight: 600;">${(f.confidence * 100).toFixed(0)}% Conf.</span>
           </div>
-          <h4 class="font-bold text-white text-xs leading-snug group-hover:text-blue-300 transition">${highlightText(f.claim, q)}</h4>
-          <div class="text-[11px] text-slate-400 flex items-center space-x-2">
-            <span>${f.doc_filename}</span>
+          <h4 style="font-size: 0.8rem; font-weight: 700; color: #FFFFFF; line-height: 1.4; margin-bottom: 0.45rem;">${highlightText(f.claim, q)}</h4>
+          <div style="font-family: var(--font-mono); font-size: 0.68rem; color: #64748B; display: flex; gap: 0.4rem;">
+            <span class="truncate" style="max-width: 220px;">${f.doc_filename}</span>
             <span>&bull;</span>
             <span>Page ${f.page_number}</span>
-          </div>
-          <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800/80 text-[11px] text-slate-400 italic font-serif">
-            "${highlightText(f.source_quote, q)}"
           </div>
         </div>
       `).join('');
     }
 
-    function openFactDrawer(factId) {
-      const fact = rawFacts.find(f => f.id === factId);
-      if (!fact) return;
+    function renderRelationships(filterType) {
+      const container = document.getElementById('relationships-container');
+      if (!container) return;
 
-      const drawer = document.getElementById('fact-drawer');
-      const backdrop = document.getElementById('fact-drawer-backdrop');
-      const content = document.getElementById('fact-drawer-content');
-
-      let entitiesHtml = (fact.entities || []).map((e, idx) => {
-        const type = (fact.entity_types && fact.entity_types[idx]) ? fact.entity_types[idx] : 'Entity';
-        return `<span class="px-2 py-0.5 rounded bg-slate-800 text-slate-200 border border-slate-700 font-mono text-[10px]">${e} (${type})</span>`;
-      }).join(' ') || '<span class="text-slate-500 italic">None specified</span>';
-
-      let attrsHtml = Object.entries(fact.attributes || {}).map(([k, v]) => `
-        <div class="flex justify-between py-1 border-b border-slate-800/60 font-mono text-[11px]">
-          <span class="text-slate-400">${k}:</span>
-          <span class="text-white font-medium">${v}</span>
-        </div>
-      `).join('') || '<div class="text-slate-500 italic py-1">No structured attributes</div>';
-
-      content.innerHTML = `
-        <div class="space-y-3">
-          <div>
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Stated Fact Claim</span>
-            <p class="font-bold text-white text-sm mt-0.5 leading-snug">${fact.claim}</p>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2 text-[11px]">
-            <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
-              <span class="text-slate-500 block text-[10px] uppercase font-bold">Subject:</span>
-              <span class="text-slate-200 font-medium font-mono">${fact.subject}</span>
-            </div>
-            <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
-              <span class="text-slate-500 block text-[10px] uppercase font-bold">Predicate:</span>
-              <span class="text-slate-200 font-medium font-mono">${fact.predicate}</span>
-            </div>
-          </div>
-
-          <div>
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Source Lineage</span>
-            <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 text-[11px] font-mono">
-              <div>Filing: ${fact.doc_filename}</div>
-              <div>Page: ${fact.page_number}</div>
-              <div>Chunk ID: ${fact.chunk_id || 'N/A'}</div>
-            </div>
-          </div>
-
-          <div>
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Verbatim Source Quotation</span>
-            <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 italic font-serif text-xs leading-relaxed border-l-2 border-blue-500">
-              "${fact.source_quote}"
-            </div>
-          </div>
-
-          <div>
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Associated Entities</span>
-            <div class="flex flex-wrap gap-1">${entitiesHtml}</div>
-          </div>
-
-          <div>
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Structured Attributes</span>
-            <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 space-y-0.5">${attrsHtml}</div>
-          </div>
-        </div>
-      `;
-
-      drawer.classList.remove('translate-x-full');
-      backdrop.classList.remove('hidden');
-    }
-
-    function closeFactDrawer() {
-      const drawer = document.getElementById('fact-drawer');
-      const backdrop = document.getElementById('fact-drawer-backdrop');
-      if (drawer) drawer.classList.add('translate-x-full');
-      if (backdrop) backdrop.classList.add('hidden');
-    }
-
-    async function loadRelationships() {
-      try {
-        const res = await fetch('/api/relationships');
-        rawRelationships = await res.json();
-        
-        const rCount = document.getElementById('count-rels');
-        if (rCount) rCount.innerText = rawRelationships.length;
-
-        const ribRels = document.getElementById('ribbon-rels');
-        if (ribRels) ribRels.innerText = `${rawRelationships.length} Connections`;
-        
-        const hStats = document.getElementById('header-stats');
-        if (hStats) hStats.innerText = `${rawDocuments.length} Filings • ${rawFacts.length} Facts • ${rawRelationships.length} Reconciliations`;
-
-        filterRelationships('all');
-      } catch (e) {
-        console.error('Failed to load relationships', e);
-      }
-    }
-
-    function filterRelationships(type) {
-      ['all', 'corroboration', 'contradiction', 'contextual_reconciliation'].forEach(t => {
-        const btn = document.getElementById(`filter-rel-${t}`);
+      ['all', 'corroboration', 'contradiction', 'reconciliation'].forEach(ft => {
+        const btn = document.getElementById(`rel-filter-${ft}`);
         if (btn) {
-          if (t === type) {
-            btn.className = 'rel-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-sm transition';
+          if (ft === filterType || (ft === 'reconciliation' && filterType === 'contextual_reconciliation')) {
+            btn.classList.add('primary');
           } else {
-            btn.className = 'rel-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 text-slate-300 hover:text-white border border-slate-800 transition';
+            btn.classList.remove('primary');
           }
         }
       });
 
-      const filtered = rawRelationships.filter(r => {
-        if (type === 'all') return true;
-        return (r.relationship_type || '').toLowerCase().includes(type.toLowerCase());
+      const filtered = cachedRelationships.filter(r => {
+        if (filterType === 'all') return true;
+        if (filterType === 'corroboration') return r.relationship_type === 'corroboration';
+        if (filterType === 'contradiction') return r.relationship_type === 'contradiction';
+        if (filterType === 'contextual_reconciliation' || filterType === 'reconciliation') {
+          return r.relationship_type === 'contextual_reconciliation';
+        }
+        return true;
       });
 
-      const countEl = document.getElementById('rel-filter-count');
-      if (countEl) countEl.innerText = `Showing ${filtered.length} of ${rawRelationships.length} relationships`;
-      
-      const container = document.getElementById('relationships-container');
-      if (!container) return;
-
-      if (!filtered.length) {
-        container.innerHTML = '<div class="p-8 text-center text-slate-500 text-xs">No relationships found under this category.</div>';
+      if (filtered.length === 0) {
+        container.innerHTML = '<div style="padding: 2.5rem; text-align: center; color: #64748B; font-family: var(--font-mono); font-size: 0.75rem;">NO RELATIONSHIPS MATCHING FILTER</div>';
         return;
       }
 
       container.innerHTML = filtered.map(r => {
-        const fa = r.fact_a;
-        const fb = r.fact_b;
-        let badgeColor = 'bg-blue-500/10 text-blue-400 border-blue-500/30';
-        if (r.relationship_type.includes('corroboration')) badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
-        if (r.relationship_type.includes('contradiction')) badgeColor = 'bg-rose-500/10 text-rose-400 border-rose-500/30';
-        if (r.relationship_type.includes('reconciliation')) badgeColor = 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+        let badgeStyle = 'badge-emerald';
+        if (r.relationship_type === 'contradiction') badgeStyle = 'badge-red';
+        if (r.relationship_type === 'contextual_reconciliation') badgeStyle = 'badge-amber';
+
+        const fa = r.fact_a || {};
+        const fb = r.fact_b || {};
 
         return `
-          <div class="glass-panel rounded-2xl p-5 shadow-lg space-y-3 hover:border-slate-700 transition">
-            <div class="flex justify-between items-center">
-              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border ${badgeColor}">${r.relationship_type.replace('_', ' ')}</span>
-              <span class="text-xs font-mono text-slate-400">Confidence: ${(r.confidence * 100).toFixed(0)}%</span>
+          <div class="terminal-panel" style="padding: 1rem; margin-bottom: 0.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 0.5rem;">
+              <span class="badge ${badgeStyle}">${r.relationship_type.replace('_', ' ')}</span>
+              <span style="color: #F5D061; font-weight: 600;">${(r.confidence * 100).toFixed(0)}% Conf.</span>
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-              <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1">
-                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Filing A:</span>
-                <p class="font-semibold text-white leading-snug">${fa ? fa.claim : r.fact_a_id}</p>
-                <span class="text-blue-400 text-[11px] block font-mono">${fa ? `${fa.doc_filename} (Page ${fa.page_number})` : ''}</span>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.75rem; margin-bottom: 0.5rem;">
+              <div style="padding: 0.65rem; background: rgba(5, 7, 17, 0.65); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 4px;">
+                <span style="font-size: 0.68rem; font-family: var(--font-mono); color: #64748B; display: block; margin-bottom: 0.2rem;">${fa.doc_filename || 'Doc A'} (p.${fa.page_number || '?'})</span>
+                <span style="font-size: 0.78rem; color: #F8FAFC;">${fa.claim || 'Claim'}</span>
               </div>
-              <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1">
-                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Filing B:</span>
-                <p class="font-semibold text-white leading-snug">${fb ? fb.claim : r.fact_b_id}</p>
-                <span class="text-indigo-400 text-[11px] block font-mono">${fb ? `${fb.doc_filename} (Page ${fb.page_number})` : ''}</span>
+              <div style="padding: 0.65rem; background: rgba(5, 7, 17, 0.65); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 4px;">
+                <span style="font-size: 0.68rem; font-family: var(--font-mono); color: #64748B; display: block; margin-bottom: 0.2rem;">${fb.doc_filename || 'Doc B'} (p.${fb.page_number || '?'})</span>
+                <span style="font-size: 0.78rem; color: #F8FAFC;">${fb.claim || 'Claim'}</span>
               </div>
             </div>
-
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800/70 text-xs text-slate-300 leading-relaxed">
-              <strong class="text-slate-400 font-bold block mb-0.5 text-[10px] uppercase tracking-wider">Reconciliation Protocol & Rationale:</strong>
+            <p style="font-size: 0.75rem; color: #CBD5E1; font-style: italic; border-left: 2px solid rgba(245, 208, 97, 0.5); padding-left: 0.5rem;">
               ${r.explanation}
-            </div>
+            </p>
           </div>
         `;
       }).join('');
     }
 
-    async function loadExport() {
+    function openFactDrawer(factId) {
+      const fact = cachedFacts.find(f => f.id === factId);
+      if (!fact) return;
+
+      document.getElementById('drawer-fact-id').innerText = fact.id.substring(0, 16);
+      document.getElementById('drawer-claim').innerText = fact.claim;
+      document.getElementById('drawer-category').innerText = fact.category || 'General';
+      document.getElementById('drawer-confidence').innerText = `${(fact.confidence * 100).toFixed(0)}%`;
+      document.getElementById('drawer-subject').innerText = fact.subject || '—';
+      document.getElementById('drawer-predicate').innerText = fact.predicate || '—';
+      document.getElementById('drawer-object').innerText = fact.object_value || '—';
+      document.getElementById('drawer-doc').innerText = fact.doc_filename;
+      document.getElementById('drawer-page').innerText = `Page ${fact.page_number}`;
+      document.getElementById('drawer-quote').innerText = `"${fact.source_quote}"`;
+
+      const attrsContainer = document.getElementById('drawer-attributes');
+      if (fact.attributes && Object.keys(fact.attributes).length > 0) {
+        attrsContainer.innerHTML = Object.entries(fact.attributes).map(([k, v]) => `
+          <div style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06);">
+            <span style="color: #94A3B8; text-transform: uppercase; font-size: 0.65rem;">${k}:</span>
+            <span style="color: #FFFFFF; font-size: 0.72rem; font-weight: 600;">${v}</span>
+          </div>
+        `).join('');
+      } else {
+        attrsContainer.innerHTML = '<span style="color: #64748B; font-size: 0.72rem;">No additional attributes</span>';
+      }
+
+      document.getElementById('fact-drawer-overlay').classList.remove('hidden');
+      document.getElementById('fact-drawer').style.transform = 'translateX(0)';
+    }
+
+    function closeFactDrawer() {
+      document.getElementById('fact-drawer-overlay').classList.add('hidden');
+      document.getElementById('fact-drawer').style.transform = 'translateX(100%)';
+    }
+
+    async function loadExportPreview() {
+      const preview = document.getElementById('export-preview');
+      if (!preview) return;
       try {
         const res = await fetch('/api/export');
         const data = await res.json();
-        const sDocs = document.getElementById('stat-docs');
-        if (sDocs) sDocs.innerText = data.summary.total_documents;
-        const sFacts = document.getElementById('stat-facts');
-        if (sFacts) sFacts.innerText = data.summary.total_facts;
-        const sRels = document.getElementById('stat-rels');
-        if (sRels) sRels.innerText = data.summary.total_relationships;
-        const sContras = document.getElementById('stat-contras');
-        if (sContras) sContras.innerText = data.summary.contradictions;
-        
-        const preview = document.getElementById('json-preview');
-        if (preview) preview.innerText = JSON.stringify(data, null, 2);
+        preview.innerText = JSON.stringify(data, null, 2).substring(0, 4000) + '\n\n... [TRUNCATED FOR PREVIEW]';
       } catch (e) {
-        console.error('Failed to load export', e);
+        preview.innerText = 'Failed to load export preview.';
       }
     }
 
-    function copyExportJson() {
-      const text = document.getElementById('json-preview').innerText;
-      navigator.clipboard.writeText(text).then(() => {
-        alert('Knowledge Graph JSON copied to clipboard!');
-      });
-    }
-
-    function handleFileSelect(event) {
-      const files = event.target.files;
-      if (!files.length) return;
-      selectedFiles = Array.from(files);
-      renderSelectedFiles();
-    }
-
-    function renderSelectedFiles() {
-      const container = document.getElementById('selected-files-container');
-      const list = document.getElementById('file-chips-list');
-      const count = document.getElementById('selected-files-count');
-      if (!selectedFiles.length) {
-        if (container) container.classList.add('hidden');
-        return;
-      }
-      if (container) container.classList.remove('hidden');
-      if (count) count.innerText = selectedFiles.length;
-      if (list) {
-        list.innerHTML = selectedFiles.map((f, i) => `
-          <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-blue-500/10 text-blue-300 border border-blue-500/20">
-            ${f.name} (${(f.size / 1024).toFixed(0)} KB)
-            <button type="button" onclick="removeFile(${i})" class="ml-2 text-blue-400 hover:text-rose-400 font-bold">&times;</button>
-          </span>
-        `).join('');
-      }
-    }
-
-    function removeFile(index) {
-      selectedFiles.splice(index, 1);
-      renderSelectedFiles();
-    }
-
-    function clearSelectedFiles() {
-      selectedFiles = [];
-      const input = document.getElementById('pdf-file-input');
-      if (input) input.value = '';
-      renderSelectedFiles();
-    }
-
-    async function handleBatchUpload(e) {
+    function handleDragOver(e) {
       e.preventDefault();
-      if (!selectedFiles.length) {
-        alert('Please select at least one PDF file to ingest.');
+      e.stopPropagation();
+      document.getElementById('drop-zone').style.borderColor = '#F5D061';
+    }
+
+    function handleDragLeave(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      document.getElementById('drop-zone').style.borderColor = 'rgba(255, 255, 255, 0.15)';
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      document.getElementById('drop-zone').style.borderColor = 'rgba(255, 255, 255, 0.15)';
+      if (e.dataTransfer && e.dataTransfer.files) {
+        addFilesToQueue(Array.from(e.dataTransfer.files));
+      }
+    }
+
+    function handleFileSelect(e) {
+      if (e.target.files) {
+        addFilesToQueue(Array.from(e.target.files));
+      }
+    }
+
+    function addFilesToQueue(files) {
+      const pdfs = files.filter(f => f.name.toLowerCase().endsWith('.pdf'));
+      if (pdfs.length === 0) {
+        alert('Please select valid PDF documents.');
         return;
       }
+      queuedFiles = pdfs;
+      const list = document.getElementById('selected-files-list');
+      const container = document.getElementById('files-container');
+      list.classList.remove('hidden');
+      container.innerHTML = queuedFiles.map(f => `
+        <div style="padding: 0.5rem 0.75rem; background: rgba(5, 7, 17, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #FFFFFF;">${f.name}</span>
+          <span style="color: #94A3B8;">${(f.size / 1024).toFixed(0)} KB</span>
+        </div>
+      `).join('');
+    }
 
-      const formData = new FormData();
-      for (const file of selectedFiles) {
-        formData.append('files', file);
-      }
+    async function startUpload() {
+      if (queuedFiles.length === 0) return;
 
-      const statusDiv = document.getElementById('upload-status');
+      const statusBox = document.getElementById('upload-status');
       const progressBar = document.getElementById('upload-progress-bar');
       const statusTitle = document.getElementById('upload-status-title');
       const statusPct = document.getElementById('upload-status-pct');
       const statusText = document.getElementById('upload-status-text');
       const uploadBtn = document.getElementById('upload-btn');
 
-      if (statusDiv) statusDiv.classList.remove('hidden');
-      if (uploadBtn) {
-        uploadBtn.disabled = true;
-        uploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
-      }
+      statusBox.classList.remove('hidden');
+      uploadBtn.disabled = true;
 
-      if (progressBar) progressBar.style.width = '30%';
-      if (statusPct) statusPct.innerText = '30%';
-      if (statusTitle) statusTitle.innerText = `Ingesting ${selectedFiles.length} Filing(s)...`;
-      if (statusText) statusText.innerText = 'Parsing text streams, extracting markdown tables, and calling LLM fact triples...';
+      const formData = new FormData();
+      queuedFiles.forEach(f => formData.append('files', f));
+
+      progressBar.style.width = '20%';
+      statusPct.innerText = '20%';
+      statusTitle.innerText = 'PARSING PDF TEXT & TABLES...';
+      statusText.innerText = 'Reading document structure with pdfplumber table heuristics...';
+
+      const timer = setInterval(() => {
+        const cur = parseInt(statusPct.innerText);
+        if (cur < 85) {
+          const next = cur + 10;
+          progressBar.style.width = `${next}%`;
+          statusPct.innerText = `${next}%`;
+          if (next > 40 && next <= 60) {
+            statusTitle.innerText = 'EXTRACTING ATOMIC FACTS...';
+            statusText.innerText = 'Extracting domain-agnostic triples and verifying evidence quotes...';
+          } else if (next > 60) {
+            statusTitle.innerText = 'PAIRING & RECONCILING...';
+            statusText.innerText = 'Vector dense embeddings & cross-document audit verification...';
+          }
+        }
+      }, 1500);
 
       try {
         const res = await fetch('/api/upload', {
           method: 'POST',
           body: formData
         });
+        clearInterval(timer);
 
-        if (!res.ok) throw new Error(`Upload error: ${res.status}`);
+        if (!res.ok) throw new Error(`Server returned HTTP ${res.status}`);
         const data = await res.json();
 
-        if (progressBar) progressBar.style.width = '100%';
-        if (statusPct) statusPct.innerText = '100%';
-        if (statusTitle) statusTitle.innerText = 'Batch Processing & Reconciliation Complete!';
-        if (statusText) statusText.innerText = `Successfully ingested ${data.results.length} files. Refreshing facts and cases...`;
+        progressBar.style.width = '100%';
+        statusPct.innerText = '100%';
+        statusTitle.innerText = 'BATCH INGESTION COMPLETE';
+        statusText.innerText = `Ingested ${queuedFiles.length} filing(s). Updating knowledge base...`;
 
-        setTimeout(async () => {
-          clearSelectedFiles();
-          await init();
-          if (uploadBtn) {
-            uploadBtn.disabled = false;
-            uploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-          }
-          if (statusDiv) statusDiv.classList.add('hidden');
-          switchTab('cases');
-          alert('Documents successfully ingested! Cases and relationships have been updated.');
-        }, 1200);
-
+        setTimeout(() => {
+          alert('Batch Ingestion Successful! Knowledge layer updated.');
+          window.location.reload();
+        }, 1000);
       } catch (err) {
-        if (progressBar) progressBar.style.backgroundColor = '#ef4444';
-        if (statusTitle) statusTitle.innerText = 'Upload Error';
-        if (statusText) statusText.innerText = err.message;
-        if (uploadBtn) {
-          uploadBtn.disabled = false;
-          uploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        }
+        clearInterval(timer);
+        progressBar.style.backgroundColor = '#F43F5E';
+        statusTitle.innerText = 'UPLOAD FAILED';
+        statusText.innerText = err.message;
+        uploadBtn.disabled = false;
       }
     }
 
