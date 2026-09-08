@@ -250,7 +250,6 @@ def get_dashboard_html() -> str:
         <span style="color: #F8FAFC; font-weight: 700; font-family: var(--font-mono); letter-spacing: 0.02em;">Superjoin</span>
         <span style="color: #64748B; font-family: var(--font-mono);">/</span>
         <span style="color: #94A3B8; font-size: 0.78rem;">Fact Knowledge Layer</span>
-        <span class="badge badge-amber" style="font-size: 0.65rem; padding: 0.1rem 0.35rem; margin-left: 0.2rem;">v2.5 PRO</span>
       </div>
     </div>
 
@@ -297,9 +296,6 @@ def get_dashboard_html() -> str:
               SUPERJOIN<span style="color: #0C8CE9;">_AI</span>
             </h1>
           </div>
-          <span class="badge" style="background: rgba(12, 140, 233, 0.1); border: 1px solid rgba(12, 140, 233, 0.35); color: #38BDF8; font-size: 0.7rem; font-weight: 700;">
-            TRACK 04 FINTECH AI
-          </span>
           <span class="badge" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #10B981; font-size: 0.7rem; font-weight: 700;">
             EVIDENCE RECONCILER
           </span>
