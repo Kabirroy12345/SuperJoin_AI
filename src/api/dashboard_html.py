@@ -1191,9 +1191,11 @@ def get_dashboard_html() -> str:
 
     async function confirmReset() {
       const confirmAction = confirm(
-        "🔄 RESET TO BENCHMARK BASELINE\n\n" +
-        "This will restore the 3 benchmark Delhivery filings, 258 verified facts, and 47 relationships.\n\n" +
-        "Click OK to restore benchmark baseline, or Cancel to keep current state."
+        `🔄 RESET TO BENCHMARK BASELINE
+
+This will restore the 3 benchmark Delhivery filings, 258 verified facts, and 47 relationships.
+
+Click OK to restore benchmark baseline, or Cancel to keep current state.`
       );
       if (!confirmAction) return;
 
